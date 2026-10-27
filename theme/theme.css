@@ -37,10 +37,10 @@ h2, h3, .titlePage h2 { color: #b6510b; }
 input, select, textarea { border-radius: 5px; }
 input[type=submit], button { cursor: pointer; }
 :focus-visible { outline: 3px solid var(--vpsfree-orange); outline-offset: 3px; }
-#imageHeaderBar, #imageInfos { background: var(--vpsfree-blue); color: #edf3fa; }
-#imageHeaderBar a, #imageInfos a { color: #edf3fa; }
-#imageInfos { border-radius: 10px; }
-#imageToolBar .pwg-icon { color: var(--vpsfree-blue); }
+#thePicturePage #imageHeaderBar, #thePicturePage #imageInfos { background: var(--vpsfree-blue); color: #edf3fa; }
+#thePicturePage #imageHeaderBar a, #thePicturePage #imageInfos a { color: #edf3fa; }
+#thePicturePage #imageInfos { border-radius: 10px; }
+#thePicturePage #imageToolBar .pwg-icon { color: var(--vpsfree-blue); }
 #copyright { padding: 24px 16px; background: #16273f; color: #dce6f1; }
 #copyright a { color: var(--vpsfree-orange); }
 @media (max-width: 640px) {
