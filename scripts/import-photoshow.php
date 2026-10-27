@@ -55,7 +55,7 @@ foreach (simplexml_load_file($source.'/fotky_thumbs/Conf/accounts.xml') as $acco
     $password = bin2hex(random_bytes(18));
     $id = insertRow('piwigo_users', ['username'=>$login, 'password'=>$hasher->HashPassword($password), 'mail_address'=>(string)$account->email]);
     $groups = array_map('strval', iterator_to_array($account->groups->children(), false));
-    insertRow('piwigo_user_infos', ['user_id'=>$id, 'status'=>in_array('root', $groups, true) ? 'admin' : 'normal', 'language'=>'cs_CZ', 'theme'=>'vpsfree', 'registration_date'=>date('Y-m-d H:i:s')]);
+    insertRow('piwigo_user_infos', ['user_id'=>$id, 'status'=>in_array('root', $groups, true) ? 'admin' : 'normal', 'level'=>in_array('root', $groups, true) ? 8 : 0, 'language'=>'cs_CZ', 'theme'=>'vpsfree', 'registration_date'=>date('Y-m-d H:i:s')]);
     foreach ($groups as $group) {
         if (!isset($groupIds[$group])) throw new RuntimeException('Unknown source group');
         insertRow('piwigo_user_group', ['user_id'=>$id, 'group_id'=>$groupIds[$group]]);

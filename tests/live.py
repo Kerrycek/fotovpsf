@@ -44,7 +44,11 @@ class Session:
             headers['Content-Type']='application/x-www-form-urlencoded'
         status,_,body=self.raw('ws.php?format=json',data,headers)
         try: result=json.loads(body)
-        except ValueError: raise AssertionError(f'{method}: non-JSON HTTP {status}')
+        except ValueError:
+            # Legacy addSimple uses plain-text rejection for forbidden types.
+            if expect=='fail' and body.strip() in (b'unexpected file type',b'forbidden file type'):
+                return None
+            raise AssertionError(f'{method}: non-JSON HTTP {status}')
         assert result.get('stat')==expect, f'{method}: expected {expect}, HTTP {status}, API code {result.get("err")} message {result.get("message")}'
         return result.get('result')
     def login(self, username, password):
@@ -66,11 +70,17 @@ public=anonymous.api('pwg.images.getInfo',{'image_id':1})
 assert anonymous.raw(public['derivatives']['thumb']['url'])[0]==200
 print('Public browsing, member login and administrator isolation passed')
 
-png=subprocess.check_output(['php','-r', '$im=imagecreatetruecolor(640,480);$bg=imagecolorallocate($im,31,57,89);imagefill($im,0,0,$bg);$orange=imagecolorallocate($im,246,145,75);imagefilledrectangle($im,120,100,520,380,$orange);imagepng($im);'])
+def fixture_png():
+    return subprocess.check_output(['php','-r', '$im=imagecreatetruecolor(640,480);$bg=imagecolorallocate($im,31,57,89);imagefill($im,0,0,$bg);$orange=imagecolorallocate($im,246,145,75);imagefilledrectangle($im,120,100,520,380,$orange);imagesetpixel($im,0,0,imagecolorallocate($im,random_int(0,255),random_int(0,255),random_int(0,255)));imagepng($im);'])
+png=fixture_png()
 categories=[]
+images=[]
 try:
     private=admin.api('pwg.categories.add',{'name':'QA private '+secrets.token_hex(4),'status':'private'})['id'];categories.append(private)
+    admin.api('pwg.permissions.add',{'cat_id':private,'user_id':1})
     uploaded=admin.api('pwg.images.addSimple',{'category':private,'name':'QA private image'},('qa-private.png',png,'image/png'))
+    images.append(uploaded['image_id'])
+    admin.api('pwg.images.uploadCompleted',{'category_id':private,'image_id':uploaded['image_id']})
     info=admin.api('pwg.images.getInfo',{'image_id':uploaded['image_id']})
     derivative=info['derivatives']['thumb']['url']
     Path('/srv/foto-migration/private-image-diagnostic.json').write_text(json.dumps({'derivative':derivative,'element':info['element_url'],'image_id':uploaded['image_id']}))
@@ -91,13 +101,19 @@ try:
         assert anonymous.raw(url)[0]==404, 'Internal/direct original path exposed'
     print('Private original, generated/cached derivative and internal-path protection passed')
     public_album=admin.api('pwg.categories.add',{'name':'QA upload '+secrets.token_hex(4),'status':'public'})['id'];categories.append(public_album)
-    good=member.api('pwg.images.addSimple',{'category':public_album,'name':'QA contributor image'},('qa-member.png',png,'image/png'))
+    good=member.api('pwg.images.addSimple',{'category':public_album,'name':'QA contributor image'},('qa-member.png',fixture_png(),'image/png'))
+    images.append(good['image_id'])
+    member.api('pwg.images.uploadCompleted',{'category_id':public_album,'image_id':good['image_id']})
     assert good['image_id']>uploaded['image_id']
     anonymous.api('pwg.images.getInfo',{'image_id':good['image_id']},expect='fail')
     for filename,content,mime in [('unsafe.php',b'<?php echo "test";','application/x-php'),('fake.jpg',b'not an image','image/jpeg'),('unsafe.svg',b'<svg xmlns="http://www.w3.org/2000/svg"/>','image/svg+xml')]:
+        before=subprocess.check_output(['mariadb','-N','piwigo','-e','SELECT COUNT(*) FROM piwigo_images'])
         admin.api('pwg.images.addSimple',{'category':public_album},(filename,content,mime),expect='fail')
+        assert before==subprocess.check_output(['mariadb','-N','piwigo','-e','SELECT COUNT(*) FROM piwigo_images']), 'Rejected upload created an image'
     print('Contributor upload/moderation and PHP, fake-JPEG, SVG rejection passed')
 finally:
+    for image in images:
+        admin.api('pwg.images.delete',{'image_id':image})
     for category in reversed(categories):
         admin.api('pwg.categories.delete',{'category_id':category,'photo_deletion_mode':'delete_orphans'})
 print('Disposable QA albums removed; source photographs untouched')

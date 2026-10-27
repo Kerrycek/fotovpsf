@@ -28,8 +28,5 @@ include PHPWG_ROOT_PATH.'include/common.inc.php';
 $sql = 'SELECT i.id FROM '.IMAGES_TABLE.' i INNER JOIN '.IMAGE_CATEGORY_TABLE.' ic ON ic.image_id=i.id'
     .' WHERE i.path=\''.pwg_db_real_escape_string($original).'\''
     .get_sql_condition_FandF(['forbidden_categories'=>'ic.category_id','forbidden_images'=>'i.id'], ' AND'). ' LIMIT 1';
-if (pwg_db_num_rows(pwg_query($sql)) !== 1) {
-    error_log('Gallery image authorization denied: user='.(int)$user['id'].' session_cookie='.(isset($_COOKIE[session_name()])?'present':'absent').' source='.$original);
-    http_response_code(403); exit;
-}
+if (pwg_db_num_rows(pwg_query($sql)) !== 1) { http_response_code(403); exit; }
 http_response_code(204);

@@ -13,7 +13,7 @@ $errors = $plugins->perform_action('activate', 'community');
 if ($errors) throw new RuntimeException(json_encode($errors));
 $theme = is_array($conf['modus_theme']) ? $conf['modus_theme'] : unserialize($conf['modus_theme'], ['allowed_classes'=>false]);
 $theme['display_page_banner'] = true;
-$theme['album_thumb_size'] = 250;
+$theme['album_thumb_size'] = 512;
 conf_update_param('modus_theme', $theme, true);
 // Grant ordinary contributors upload/create-album rights, not administration.
 $row = pwg_db_fetch_assoc(pwg_query("SELECT id FROM ".$prefixeTable."groups WHERE name='uploaders'"));
