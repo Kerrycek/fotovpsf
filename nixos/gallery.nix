@@ -71,9 +71,9 @@ in {
     users.users.piwigo = { isSystemUser = true; group = "piwigo"; home = state; };
     environment.systemPackages = [ php pkgs.mariadb pkgs.python3 pkgs.unzip pkgs.git pkgs.rsync pkgs.imagemagick ];
     systemd.tmpfiles.rules = [
-      "d ${state} 0750 piwigo nginx -"
-      "d ${state}/local 0750 piwigo piwigo -"
-      "d ${state}/local/config 0750 piwigo piwigo -"
+      "d ${state} 0711 root root -"
+      "d ${state}/local 0750 root piwigo -"
+      "d ${state}/local/config 0750 ${if cfg.installationMode then "piwigo" else "root"} piwigo -"
       "d ${state}/_data 0750 piwigo nginx -"
       "d ${state}/upload 0750 piwigo nginx -"
       "d ${state}/galleries 0750 piwigo nginx -"
@@ -123,6 +123,12 @@ in {
         mysqli.default_socket = /run/mysqld/mysqld.sock
         sendmail_path = /run/current-system/sw/bin/false
       '';
+    };
+    systemd.services.phpfpm-piwigo.serviceConfig = {
+      ProtectSystem = lib.mkForce "strict";
+      ReadWritePaths = [ "${state}/_data" "${state}/upload" "${state}/galleries" "${state}/sessions" ];
+      RestrictAddressFamilies = lib.mkForce [ "AF_UNIX" ];
+      NoNewPrivileges = true;
     };
     services.nginx = {
       enable = true;

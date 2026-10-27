@@ -17,6 +17,19 @@ h2, h3, .titlePage h2 { color: #b6510b; }
 #menubar dt:hover, #menubar dt a:hover, #menubar a:hover { color: #a94e0c; }
 #qsearchInput { color: #1f3959; background: #eef2f6; border: 1px solid #d8e0e9; padding: 8px 12px; }
 .content { background: #f5f6f8; border: 0; padding: 18px; }
+.content .titrePage { background: transparent; padding: 12px 6px 22px; margin-bottom: 8px; min-height: 58px; }
+#breadcrumb h2 { font-size: 22px; line-height: 1.4; font-weight: 650; color: #1f3959; padding: 0; }
+#breadcrumb h2 a { color: #1f3959; }
+.albThumbs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; margin: 0 auto 28px; padding: 0 6px; max-width: 1240px; }
+.albThumbs li { display: block; width: 100%; height: auto; aspect-ratio: 1; margin: 0; border-radius: 12px; background: #dce5ef; box-shadow: 0 2px 8px #122b481a; }
+.albThumbs li a { display: block; width: 100%; height: 100%; }
+.albImg { width: 100%; height: 100%; object-fit: cover; transition: transform .2s ease; }
+.albThumbs li:hover .albImg { transform: scale(1.025); }
+.albLegend { height: auto; min-height: 78px; text-indent: 0; padding: 26px 16px 13px; color: white; background: linear-gradient(transparent, #102039e6); }
+.albLegend h4 { font-size: 19px; line-height: 1.3; font-weight: 650; margin: 4px 0 3px; }
+.albLegend div { font-size: 13px; color: #ecf1f8; }
+@media (max-width: 1024px) { .albThumbs { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; } }
+@media (max-width: 700px) { .albThumbs { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; } }
 .thumbnailCategory { background: white; border-radius: 10px; box-shadow: 0 2px 9px #122b4820; }
 .thumbnailCategory:hover { box-shadow: 0 4px 16px #122b4833; }
 input, select, textarea { border-radius: 5px; }
@@ -30,4 +43,10 @@ input[type=submit], button { cursor: pointer; }
   .vpsfree-brand a > span { font-size: 26px; }
   .vpsfree-brand small { font-size: 16px; }
   .content { padding: 10px; }
+  #menubar { padding: 10px 16px; }
+  #breadcrumb h2 { font-size: 19px; }
+  .albThumbs { padding: 0 4px; }
+  .albLegend { padding: 22px 12px 10px; min-height: 65px; }
+  .albLegend h4 { font-size: 17px; }
 }
+@media (prefers-reduced-motion: reduce) { .albImg { transition: none; } }
