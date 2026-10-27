@@ -194,7 +194,7 @@ in
         "listen.group" = "nginx";
         "listen.mode" = "0600";
         "pm" = "dynamic";
-        "pm.max_children" = 6;
+        "pm.max_children" = 4;
         "pm.start_servers" = 2;
         "pm.min_spare_servers" = 1;
         "pm.max_spare_servers" = 3;
@@ -206,7 +206,7 @@ in
         display_errors = Off
         log_errors = On
         date.timezone = ${if config.time.timeZone == null then "UTC" else config.time.timeZone}
-        memory_limit = 256M
+        memory_limit = 512M
         upload_max_filesize = 40M
         post_max_size = 45M
         max_file_uploads = 20
