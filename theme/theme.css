@@ -40,6 +40,7 @@ input[type=submit], button { cursor: pointer; }
 #thePicturePage #imageHeaderBar, #thePicturePage #imageInfos { background: var(--vpsfree-blue); color: #edf3fa; }
 #thePicturePage #imageHeaderBar a, #thePicturePage #imageInfos a { color: #edf3fa; }
 #thePicturePage #imageInfos { border-radius: 10px; }
+#thePicturePage #imageInfos .standard { background: transparent; color: inherit; }
 #thePicturePage #imageToolBar .pwg-icon { color: var(--vpsfree-blue); }
 #copyright { padding: 24px 16px; background: #16273f; color: #dce6f1; }
 #copyright a { color: var(--vpsfree-orange); }
