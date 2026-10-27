@@ -34,5 +34,5 @@ if [[ -d /var/lib/piwigo-preview ]]; then
 fi
 readlink -f "$gallery_state/app" > "$backup_dir/source-revision.txt"
 if git -C /srv/fotovpsf rev-parse HEAD >> "$backup_dir/source-revision.txt" 2>/dev/null; then :; fi
-sha256sum "$backup_dir"/* > "$backup_dir/SHA256SUMS"
+(cd "$backup_dir" && sha256sum ./* > SHA256SUMS)
 echo "$backup_dir"

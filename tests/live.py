@@ -111,6 +111,13 @@ try:
         admin.api('pwg.images.addSimple',{'category':public_album},(filename,content,mime),expect='fail')
         assert before==subprocess.check_output(['mariadb','-N','piwigo','-e','SELECT COUNT(*) FROM piwigo_images']), 'Rejected upload created an image'
     print('Contributor upload/moderation and PHP, fake-JPEG, SVG rejection passed')
+    large_jpeg=subprocess.check_output(['php','-d','memory_limit=512M','-r', '$im=imagecreatetruecolor(8000,6000);imagefill($im,0,0,imagecolorallocate($im,31,57,89));imagefilledrectangle($im,1000,1000,7000,5000,imagecolorallocate($im,246,145,75));imagejpeg($im,null,85);'])
+    large=admin.api('pwg.images.addSimple',{'category':public_album,'name':'QA 48 megapixel image'},('qa-large.jpg',large_jpeg,'image/jpeg'))
+    images.append(large['image_id'])
+    admin.api('pwg.images.uploadCompleted',{'category_id':public_album,'image_id':large['image_id']})
+    large_info=admin.api('pwg.images.getInfo',{'image_id':large['image_id']})
+    assert admin.raw(large_info['derivatives']['medium']['url'])[0]==200, 'Large-image derivative failed'
+    print('48-megapixel JPEG upload and derivative generation passed')
 finally:
     for image in images:
         admin.api('pwg.images.delete',{'image_id':image})
