@@ -43,13 +43,15 @@ let
     cp ${../theme/theme.css} "$out/themes/vpsfree/theme.css"
     cp ${../assets/vpsfree-white.png} "$out/themes/vpsfree/logo.png"
     cp ${../theme/admin.css} "$out/admin-vpsfree.css"
+    cp ${../theme/admin.js} "$out/admin-vpsfree.js"
     cp ${../theme/standard-pages.css} "$out/standard-vpsfree.css"
     substituteInPlace "$out/themes/vpsfree/themeconf.inc.php" \
       --replace-fail 'Theme Name: modus' 'Theme Name: vpsFree'
     substituteInPlace "$out/themes/vpsfree/template/header.tpl" \
       --replace-fail '</head>' '<link rel="stylesheet" href="{$ROOT_URL}themes/vpsfree/theme.css"></head>'
     substituteInPlace "$out/admin/themes/default/template/header.tpl" \
-      --replace-fail '</head>' '<link rel="stylesheet" href="{$ROOT_URL}admin-vpsfree.css"></head>'
+      --replace-fail '</head>' '<link rel="stylesheet" href="{$ROOT_URL}admin-vpsfree.css"><script src="{$ROOT_URL}admin-vpsfree.js" defer></script></head>' \
+      --replace-fail '<div id="pwgHead">' '<div id="pwgHead"><button id="vpsfree-admin-menu" type="button" aria-controls="menubar" aria-expanded="false" aria-label="Otevřít menu">☰</button>'
     substituteInPlace "$out/themes/standard_pages/template/header.tpl" \
       --replace-fail '</head>' '<link rel="stylesheet" href="{$ROOT_URL}standard-vpsfree.css"></head>'
     cp ${../php/image-auth.php} "$out/image-auth.php"
