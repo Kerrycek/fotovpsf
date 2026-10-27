@@ -16,6 +16,10 @@
 }
 #login-form button:hover, #password-form button:hover { background: #ffad73; }
 #return-to-gallery, #header-options a, #header-options { color: #e5edf7; }
+#mode #return-to-gallery, #mode #header-options a, #mode #header-options .toggle-mode { color: #e5edf7; }
+#mode .btn-main { background: #f6914b !important; color: #16273f !important; }
+#mode .btn-main:disabled { background: #bbc3ce !important; color: #4e5c6d !important; cursor: not-allowed; }
+.dark #login-form h1, .dark #register-form h1, .dark #password-form h1 { color: #edf3fa; }
 :focus-visible { outline: 3px solid #f6914b; outline-offset: 3px; }
 @media (max-width: 480px) {
   #logo-section { margin-top: 24px; }

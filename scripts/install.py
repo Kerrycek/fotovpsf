@@ -32,4 +32,12 @@ if not config_file.exists():
     raise SystemExit("Installation failed; inspect the private result HTML")
 os.chown(config_file, 0, grp.getgrnam("piwigo").gr_gid)
 config_file.chmod(0o640)
+gate = Path('/var/lib/piwigo-preview')
+gate.mkdir(mode=0o750, exist_ok=True)
+os.chown(gate, 0, grp.getgrnam('nginx').gr_gid)
+hashed = subprocess.run(['php', '-r', 'echo password_hash(stream_get_contents(STDIN), PASSWORD_BCRYPT);'], input=access['preview_password'], capture_output=True, text=True, check=True).stdout
+gate_file = gate/'htpasswd'
+gate_file.write_text(access['preview_username']+':'+hashed+'\n')
+gate_file.chmod(0o640)
+os.chown(gate_file, 0, grp.getgrnam('nginx').gr_gid)
 print("Installed; credentials saved to /root/fotovpsf-access.json (root only)")

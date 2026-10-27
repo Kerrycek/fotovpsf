@@ -1,9 +1,25 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   cfg = config.services.vpsfreeGallery;
   state = cfg.stateDirectory;
   php = pkgs.php84.buildEnv {
-    extensions = { enabled, all }: enabled ++ (with all; [ gd exif mysqli mbstring zip intl opcache ]);
+    extensions =
+      { enabled, all }:
+      enabled
+      ++ (with all; [
+        gd
+        exif
+        mysqli
+        mbstring
+        zip
+        intl
+        opcache
+      ]);
   };
   source = pkgs.fetchurl {
     url = "https://piwigo.org/download/dlcounter.php?code=16.4.0";
@@ -62,21 +78,82 @@ let
     $conf['check_for_updates'] = false;
     $conf['nb_image_page'] = 60;
   '';
-in {
+in
+{
   options.services.vpsfreeGallery = {
     enable = lib.mkEnableOption "vpsFree Piwigo gallery";
-    hostName = lib.mkOption { type = lib.types.str; description = "Gallery virtual host name."; };
-    public = lib.mkOption { type = lib.types.bool; default = false; description = "Listen on public interfaces instead of loopback."; };
-    tls = lib.mkOption { type = lib.types.bool; default = false; description = "Use ACME TLS directly; leave disabled behind the production reverse proxy."; };
-    stateDirectory = lib.mkOption { type = lib.types.str; default = "/var/lib/piwigo"; description = "Portable gallery state; transfer with a consistent MariaDB dump."; };
-    basicAuthFile = lib.mkOption { type = lib.types.nullOr lib.types.path; default = null; description = "Optional root-managed htpasswd file protecting the test gallery."; };
-    installationMode = lib.mkOption { type = lib.types.bool; default = false; description = "Allow installer only from loopback; disable after initial installation."; };
+    hostName = lib.mkOption {
+      type = lib.types.str;
+      description = "Gallery virtual host name.";
+    };
+    public = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Listen on public interfaces instead of loopback.";
+    };
+    tls = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Use ACME TLS directly; leave disabled behind the production reverse proxy.";
+    };
+    openFirewall = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Open HTTP/HTTPS ports; leave disabled behind the existing restricted production proxy firewall.";
+    };
+    externalHTTPS = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "External URLs use HTTPS, including when TLS terminates on a trusted reverse proxy.";
+    };
+    trustedProxyAddresses = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "Explicit proxy IPs allowed to supply the real client address.";
+    };
+    dailyBackup = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Create a consistent private on-host backup daily; arrange off-host retention before production.";
+    };
+    stateDirectory = lib.mkOption {
+      type = lib.types.str;
+      default = "/var/lib/piwigo";
+      description = "Portable gallery state; transfer with a consistent MariaDB dump.";
+    };
+    basicAuthFile = lib.mkOption {
+      type = lib.types.nullOr lib.types.path;
+      default = null;
+      description = "Optional root-managed htpasswd file protecting the test gallery.";
+    };
+    installationMode = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Allow installer only from loopback; disable after initial installation.";
+    };
   };
   config = lib.mkIf cfg.enable {
-    assertions = [{ assertion = !cfg.tls || cfg.public; message = "Gallery TLS requires public listening."; }];
-    users.groups.piwigo = {};
-    users.users.piwigo = { isSystemUser = true; group = "piwigo"; home = state; };
-    environment.systemPackages = [ php pkgs.mariadb pkgs.python3 pkgs.unzip pkgs.git pkgs.rsync pkgs.imagemagick ];
+    assertions = [
+      {
+        assertion = !cfg.tls || cfg.public;
+        message = "Gallery TLS requires public listening.";
+      }
+    ];
+    users.groups.piwigo = { };
+    users.users.piwigo = {
+      isSystemUser = true;
+      group = "piwigo";
+      home = state;
+    };
+    environment.systemPackages = [
+      php
+      pkgs.mariadb
+      pkgs.python3
+      pkgs.unzip
+      pkgs.git
+      pkgs.rsync
+      pkgs.imagemagick
+    ];
     systemd.tmpfiles.rules = [
       "d ${state} 0711 root root -"
       "d ${state}/local 0750 root piwigo -"
@@ -93,9 +170,20 @@ in {
       package = pkgs.mariadb;
       # Deliberately independent of any pre-existing /var/lib/mysql on the target.
       dataDir = "/var/lib/mysql-piwigo";
-      settings.mysqld = { skip-networking = true; character-set-server = "utf8mb4"; collation-server = "utf8mb4_unicode_ci"; };
+      settings.mysqld = {
+        skip-networking = true;
+        character-set-server = "utf8mb4";
+        collation-server = "utf8mb4_unicode_ci";
+      };
       ensureDatabases = [ "piwigo" ];
-      ensureUsers = [{ name = "piwigo"; ensurePermissions = { "piwigo.*" = "ALL PRIVILEGES"; }; }];
+      ensureUsers = [
+        {
+          name = "piwigo";
+          ensurePermissions = {
+            "piwigo.*" = "ALL PRIVILEGES";
+          };
+        }
+      ];
     };
     services.phpfpm.pools.piwigo = {
       user = "piwigo";
@@ -117,6 +205,7 @@ in {
         expose_php = Off
         display_errors = Off
         log_errors = On
+        date.timezone = ${if config.time.timeZone == null then "UTC" else config.time.timeZone}
         memory_limit = 256M
         upload_max_filesize = 40M
         post_max_size = 45M
@@ -126,16 +215,48 @@ in {
         session.cookie_httponly = On
         session.cookie_samesite = Lax
         session.use_strict_mode = On
-        session.cookie_secure = ${if cfg.tls then "On" else "Off"}
+        session.cookie_secure = ${if cfg.externalHTTPS || cfg.tls then "On" else "Off"}
         mysqli.default_socket = /run/mysqld/mysqld.sock
         sendmail_path = /run/current-system/sw/bin/false
       '';
     };
     systemd.services.phpfpm-piwigo.serviceConfig = {
       ProtectSystem = lib.mkForce "strict";
-      ReadWritePaths = [ "${state}/_data" "${state}/upload" "${state}/galleries" "${state}/sessions" ];
+      ReadWritePaths = [
+        "${state}/_data"
+        "${state}/upload"
+        "${state}/galleries"
+        "${state}/sessions"
+      ];
       RestrictAddressFamilies = lib.mkForce [ "AF_UNIX" ];
       NoNewPrivileges = true;
+    };
+    systemd.services.piwigo-backup = lib.mkIf cfg.dailyBackup {
+      description = "Consistent private Piwigo backup";
+      after = [ "mysql.service" ];
+      environment.FOTOVPSF_STATE_DIRECTORY = state;
+      path = [
+        pkgs.coreutils
+        pkgs.util-linux
+        pkgs.gnutar
+        pkgs.gzip
+        pkgs.mariadb
+        pkgs.git
+        pkgs.systemd
+      ];
+      serviceConfig = {
+        Type = "oneshot";
+        UMask = "0077";
+      };
+      script = "${pkgs.bash}/bin/bash ${../scripts/backup.sh} /var/backups/piwigo";
+    };
+    systemd.timers.piwigo-backup = lib.mkIf cfg.dailyBackup {
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnCalendar = "*-*-* 03:15:00";
+        RandomizedDelaySec = "5m";
+        Persistent = true;
+      };
     };
     services.nginx = {
       enable = true;
@@ -143,13 +264,24 @@ in {
       recommendedOptimisation = true;
       appendHttpConfig = ''
         limit_req_zone $binary_remote_addr zone=gallery_login:10m rate=10r/m;
+        limit_req_zone $binary_remote_addr zone=gallery_api:10m rate=10r/s;
+      ''
+      + lib.optionalString (cfg.trustedProxyAddresses != [ ]) ''
+        real_ip_header X-Forwarded-For;
+        real_ip_recursive on;
+        ${lib.concatMapStringsSep "\n" (address: "set_real_ip_from ${address};") cfg.trustedProxyAddresses}
       '';
       virtualHosts.${cfg.hostName} = {
         root = app;
         forceSSL = cfg.tls;
         enableACME = cfg.tls;
         basicAuthFile = cfg.basicAuthFile;
-        listen = lib.mkIf (!cfg.public) [{ addr = "127.0.0.1"; port = 8080; }];
+        listen = lib.mkIf (!cfg.public) [
+          {
+            addr = "127.0.0.1";
+            port = 8080;
+          }
+        ];
         extraConfig = ''
           client_max_body_size 45m;
           autoindex off;
@@ -181,7 +313,7 @@ in {
             include ${pkgs.nginx}/conf/fastcgi_params;
             fastcgi_param SCRIPT_FILENAME $document_root/image-auth.php;
             fastcgi_param GALLERY_ORIGINAL_URI $request_uri;
-            fastcgi_param HTTPS ${if cfg.tls then "on" else "off"};
+            fastcgi_param HTTPS ${if cfg.externalHTTPS || cfg.tls then "on" else "off"};
             fastcgi_pass_request_body off;
             fastcgi_param CONTENT_LENGTH "";
             fastcgi_pass unix:${config.services.phpfpm.pools.piwigo.socket};
@@ -190,29 +322,55 @@ in {
             auth_request /__gallery_image_auth;
             include ${pkgs.nginx}/conf/fastcgi_params;
             fastcgi_param SCRIPT_FILENAME $document_root/i.php;
-            fastcgi_param HTTPS ${if cfg.tls then "on" else "off"};
+            fastcgi_param HTTPS ${if cfg.externalHTTPS || cfg.tls then "on" else "off"};
             fastcgi_pass unix:${config.services.phpfpm.pools.piwigo.socket};
           '';
           "^~ /install/".extraConfig = "return 404;";
-          "= /install.php".extraConfig = if cfg.installationMode then ''
-            allow 127.0.0.1; deny all;
-            include ${pkgs.nginx}/conf/fastcgi_params;
-            fastcgi_param SCRIPT_FILENAME $document_root/install.php;
-            fastcgi_pass unix:${config.services.phpfpm.pools.piwigo.socket};
-          '' else "return 404;";
+          "= /install.php".extraConfig =
+            if cfg.installationMode then
+              ''
+                allow 127.0.0.1; deny all;
+                include ${pkgs.nginx}/conf/fastcgi_params;
+                fastcgi_param SCRIPT_FILENAME $document_root/install.php;
+                fastcgi_pass unix:${config.services.phpfpm.pools.piwigo.socket};
+              ''
+            else
+              "return 404;";
           "= /upgrade.php".extraConfig = "return 404;";
+          "= /identification.php".extraConfig = ''
+            limit_req zone=gallery_login burst=10 nodelay;
+            limit_req_status 429;
+            include ${pkgs.nginx}/conf/fastcgi_params;
+            fastcgi_param SCRIPT_FILENAME $document_root/identification.php;
+            fastcgi_param HTTPS ${if cfg.externalHTTPS || cfg.tls then "on" else "off"};
+            fastcgi_pass unix:${config.services.phpfpm.pools.piwigo.socket};
+          '';
+          "= /ws.php".extraConfig = ''
+            limit_req zone=gallery_api burst=40 nodelay;
+            limit_req_status 429;
+            include ${pkgs.nginx}/conf/fastcgi_params;
+            fastcgi_param SCRIPT_FILENAME $document_root/ws.php;
+            fastcgi_param HTTPS ${if cfg.externalHTTPS || cfg.tls then "on" else "off"};
+            fastcgi_pass unix:${config.services.phpfpm.pools.piwigo.socket};
+            fastcgi_read_timeout 120s;
+          '';
           "~ \\.php$".extraConfig = ''
             try_files $uri =404;
             include ${pkgs.nginx}/conf/fastcgi_params;
             fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-            fastcgi_param HTTPS ${if cfg.tls then "on" else "off"};
+            fastcgi_param HTTPS ${if cfg.externalHTTPS || cfg.tls then "on" else "off"};
             fastcgi_pass unix:${config.services.phpfpm.pools.piwigo.socket};
             fastcgi_read_timeout 120s;
           '';
         };
       };
     };
-    networking.firewall.allowedTCPPorts = lib.mkIf cfg.public ([ 80 ] ++ lib.optional cfg.tls 443);
-    security.acme = lib.mkIf cfg.tls { acceptTerms = true; defaults.email = "admin@crucio.cz"; };
+    networking.firewall.allowedTCPPorts = lib.mkIf (cfg.public && cfg.openFirewall) (
+      [ 80 ] ++ lib.optional cfg.tls 443
+    );
+    security.acme = lib.mkIf cfg.tls {
+      acceptTerms = true;
+      defaults.email = "admin@crucio.cz";
+    };
   };
 }

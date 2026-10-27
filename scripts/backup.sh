@@ -7,8 +7,13 @@ if [[ $(id -u) != 0 ]]; then
   exit 1
 fi
 backup_root=${1:-/srv/foto-migration/backups}
+gallery_state=${FOTOVPSF_STATE_DIRECTORY:-/var/lib/piwigo}
+state_name=$(basename "$gallery_state")
+exec 9>/run/lock/fotovpsf-backup.lock
+flock -n 9 || { echo 'Another gallery backup is running' >&2; exit 1; }
 backup_dir="$backup_root/$(date -u +%Y%m%dT%H%M%SZ)"
-mkdir -p "$backup_dir"
+mkdir -p "$backup_root"
+mkdir "$backup_dir"
 chmod 700 "$backup_root" "$backup_dir"
 was_active=0
 if systemctl is-active --quiet phpfpm-piwigo; then
@@ -20,13 +25,14 @@ finish() {
 }
 trap finish EXIT
 mariadb-dump --lock-all-tables --hex-blob piwigo > "$backup_dir/piwigo.sql"
-tar -C /var/lib --exclude=piwigo/app --exclude=piwigo/sessions -czpf "$backup_dir/piwigo-state.tar.gz" piwigo
+tar -C "$(dirname "$gallery_state")" --exclude="$state_name/app" --exclude="$state_name/sessions" --exclude="$state_name/local/config/config.inc.php" -czpf "$backup_dir/piwigo-state.tar.gz" "$state_name"
 if [[ -f /root/fotovpsf-access.json ]]; then
   cp -p /root/fotovpsf-access.json "$backup_dir/access.json"
 fi
 if [[ -d /var/lib/piwigo-preview ]]; then
   tar -C /var/lib -czpf "$backup_dir/preview-gate.tar.gz" piwigo-preview
 fi
-git -C /srv/fotovpsf rev-parse HEAD > "$backup_dir/source-revision.txt"
+readlink -f "$gallery_state/app" > "$backup_dir/source-revision.txt"
+if git -C /srv/fotovpsf rev-parse HEAD >> "$backup_dir/source-revision.txt" 2>/dev/null; then :; fi
 sha256sum "$backup_dir"/* > "$backup_dir/SHA256SUMS"
 echo "$backup_dir"

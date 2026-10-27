@@ -17,6 +17,7 @@ $theme['album_thumb_size'] = 512;
 conf_update_param('modus_theme', $theme, true);
 conf_update_param('standard_pages_selected_logo', 'custom_logo');
 conf_update_param('standard_pages_selected_logo_path', 'themes/vpsfree/logo.png');
+conf_update_param('page_banner', '<div class="vpsfree-brand"><a href="./"><img src="themes/vpsfree/logo.png" width="171" height="50" alt="vpsFree.cz"><small>Fotogalerie</small></a></div>');
 // Grant ordinary contributors upload/create-album rights, not administration.
 $row = pwg_db_fetch_assoc(pwg_query("SELECT id FROM ".$prefixeTable."groups WHERE name='uploaders'"));
 if (!$row) throw new RuntimeException('Missing uploaders group');

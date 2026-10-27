@@ -26,6 +26,9 @@ nixos-rebuild switch --flake /srv/fotovpsf#foto-test
 `nixos/gallery.nix` exports `services.vpsfreeGallery`. Import this module on the
 eventual target alongside existing websites. Configure its hostname, public
 listening and TLS (disable local TLS when using the existing TLS proxy).
+Set `trustedProxyAddresses` to the actual proxy addresses, retain
+`externalHTTPS = true` for secure cookies, and leave `openFirewall = false`
+on the original host so its existing proxy-only access rule remains effective.
 Use the same package lock while rehearsing the move. The gallery has its own
 PHP pool and system user. MariaDB listens only on a Unix socket and uses a
 separate `/var/lib/mysql-piwigo` data directory, preserving old `/var/lib/mysql`.
@@ -34,6 +37,13 @@ Application code/themes/plugins are read only in the Nix store. Update pinned
 packages through Git/Nix, not through the web interface. Writable state lives
 in `/var/lib/piwigo`, with `app` pointing to the built package.
 
+Daily consistent backups run at 03:15–03:20 local time via
+`piwigo-backup.timer`, in `/var/backups/piwigo` (root only). The PHP pool pauses
+briefly so uploaded files and MyISAM tables form one coherent backup. Run
+`systemctl start piwigo-backup` for a manual checkpoint. Copies on the same VPS
+are recovery checkpoints; arrange off-host storage, retention and disk-space
+monitoring before production. No backup is deleted automatically.
+
 ## Initial migration
 
 1. Copy the whole original PhotoShow tree into private staging on the NEW VPS.
@@ -41,6 +51,10 @@ in `/var/lib/piwigo`, with `app` pointing to the built package.
 2. Keep the initial listener on loopback, enable `installationMode`, then run
    `python3 scripts/install.py` on the new VPS. It refuses a nonempty database.
    Generated credentials stay in `/root/fotovpsf-access.json` (0600).
+   For a fresh machine, first set `public = false`, `tls = false`,
+   `basicAuthFile = null`, `installationMode = true` in the host configuration.
+   The installer creates the private preview gate; only then enable the final
+   public/TLS configuration. The committed host is the configured preview.
 3. Take a pre-import dump. Run `php scripts/import-photoshow.php` as root on
    the new VPS. It refuses a nonempty gallery. Photos retain their bytes and
    directory layout; album nesting, accounts and groups are imported. Source
@@ -51,6 +65,10 @@ in `/var/lib/piwigo`, with `app` pointing to the built package.
    Outbound mail is disabled on the preview; configure the administrator's
    real email and mail transport before enabling email-based recovery or
    contributor notifications in production.
+   Then initialize the theme and contributor policy once with
+   `runuser -u piwigo -- php /srv/fotovpsf/scripts/configure.php`. This bootstrap
+   resets Community contributor rules to the documented uploaders/moderation
+   baseline; do not rerun it over later operator customizations.
 5. Disable `installationMode`, verify permissions and direct-file access,
    apply HTTPS and a temporary preview access gate before exposing test data.
 
@@ -71,3 +89,8 @@ state ownership. Validate on a temporary local port before enabling the
 existing `foto.vpsfree.cz` virtual host. Test original hashes, albums, users,
 upload, private images, cache and TLS proxy headers. Keep the test VPS and
 pre-move backups for rollback. Production changes require a later instruction.
+
+Reapply `systemd-tmpfiles --create` after restoring state so managed code/policy
+symlinks and directory ownership match the target build. Test legacy
+PhotoShow URL redirects, mail settings and off-host backups before a production
+cutover; the preview does not change the original domain or its links.
