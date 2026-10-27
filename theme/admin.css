@@ -1,0 +1,8 @@
+/* Keep the supported administration UI and its spacing, with vpsFree branding. */
+#pwgHead { background: #1f3959; }
+#pwgHead a, #pwgHead .headActions { color: #edf3fa; }
+#menubar { background: #16273f; }
+#menubar dt, #menubar a { color: #dce6f1; }
+#menubar a:hover, #menubar a.selected { color: #f6914b; }
+#pwgMain #content { padding-bottom: 32px; }
+input:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid #f6914b; outline-offset: 3px; }

@@ -15,6 +15,8 @@ $theme = is_array($conf['modus_theme']) ? $conf['modus_theme'] : unserialize($co
 $theme['display_page_banner'] = true;
 $theme['album_thumb_size'] = 512;
 conf_update_param('modus_theme', $theme, true);
+conf_update_param('standard_pages_selected_logo', 'custom_logo');
+conf_update_param('standard_pages_selected_logo_path', 'themes/vpsfree/logo.png');
 // Grant ordinary contributors upload/create-album rights, not administration.
 $row = pwg_db_fetch_assoc(pwg_query("SELECT id FROM ".$prefixeTable."groups WHERE name='uploaders'"));
 if (!$row) throw new RuntimeException('Missing uploaders group');

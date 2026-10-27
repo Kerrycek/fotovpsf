@@ -8,6 +8,7 @@ body { background: #f5f6f8; color: #243246; font-family: "Open Sans", system-ui,
 .vpsfree-brand a > span { font-size: 32px; font-weight: 750; letter-spacing: -.8px; }
 .brand-orange { color: var(--vpsfree-orange); }
 .vpsfree-brand small { font-size: 18px; font-weight: 400; color: #e4eaf2; }
+.vpsfree-brand img { display: block; width: 171px; height: 50px; object-fit: contain; }
 a { color: #245c8b; }
 a:hover, a:focus-visible { color: #a94e0c; }
 h2, h3, .titlePage h2 { color: #b6510b; }
@@ -43,6 +44,7 @@ input[type=submit], button { cursor: pointer; }
   .vpsfree-brand a { flex-wrap: wrap; gap: 5px 18px; }
   .vpsfree-brand a > span { font-size: 26px; }
   .vpsfree-brand small { font-size: 16px; }
+  .vpsfree-brand img { width: 150px; height: auto; }
   .content { padding: 10px; }
   #menubar { padding: 10px 16px; }
   #breadcrumb h2 { font-size: 19px; }

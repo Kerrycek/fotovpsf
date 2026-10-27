@@ -25,17 +25,24 @@ let
     ln -s ${state}/galleries "$out/galleries"
     cp -r "$out/themes/modus" "$out/themes/vpsfree"
     cp ${../theme/theme.css} "$out/themes/vpsfree/theme.css"
+    cp ${../assets/vpsfree-white.png} "$out/themes/vpsfree/logo.png"
+    cp ${../theme/admin.css} "$out/admin-vpsfree.css"
+    cp ${../theme/standard-pages.css} "$out/standard-vpsfree.css"
     substituteInPlace "$out/themes/vpsfree/themeconf.inc.php" \
       --replace-fail 'Theme Name: modus' 'Theme Name: vpsFree'
     substituteInPlace "$out/themes/vpsfree/template/header.tpl" \
       --replace-fail '</head>' '<link rel="stylesheet" href="{$ROOT_URL}themes/vpsfree/theme.css"></head>'
+    substituteInPlace "$out/admin/themes/default/template/header.tpl" \
+      --replace-fail '</head>' '<link rel="stylesheet" href="{$ROOT_URL}admin-vpsfree.css"></head>'
+    substituteInPlace "$out/themes/standard_pages/template/header.tpl" \
+      --replace-fail '</head>' '<link rel="stylesheet" href="{$ROOT_URL}standard-vpsfree.css"></head>'
     cp ${../php/image-auth.php} "$out/image-auth.php"
     # Executable code is immutable. Core/plugin updates go through this flake.
   '';
   policy = pkgs.writeText "piwigo-policy.php" ''
     <?php
     $conf['gallery_title'] = 'Fotogalerie vpsFree.cz';
-    $conf['page_banner'] = '<div class="vpsfree-brand"><a href="./"><span>vps<span class="brand-orange">Free</span>.cz</span><small>Fotogalerie</small></a></div>';
+    $conf['page_banner'] = '<div class="vpsfree-brand"><a href="./"><img src="themes/vpsfree/logo.png" width="171" height="50" alt="vpsFree.cz"><small>Fotogalerie</small></a></div>';
     $conf['default_theme'] = 'vpsfree';
     $conf['default_language'] = 'cs_CZ';
     $conf['allow_user_registration'] = false;

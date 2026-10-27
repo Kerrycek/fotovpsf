@@ -1,0 +1,25 @@
+/* Shared login/profile pages use Piwigo's supported templates and components. */
+#mode { background: #1f3959 !important; }
+#logo-section { margin: 32px auto 24px; padding: 0 24px; }
+#logo-section #custom-logo { width: 205px; max-width: 100%; height: auto; }
+#logo-section h1 { color: #fff; }
+#login-form, #register-form, #password-form, .profile-section {
+  box-sizing: border-box; width: calc(100% - 40px); max-width: 460px;
+  padding: 32px 36px; margin: 16px auto 24px; border-radius: 14px;
+  box-shadow: 0 12px 40px #07172938;
+}
+#login-form h1, #register-form h1, #password-form h1 { color: #1f3959; }
+#login-form input, #password-form input { box-sizing: border-box; min-height: 44px; }
+#login-form button, #register-form button, #password-form button {
+  background: #f6914b; color: #16273f; border-color: #f6914b;
+  border-radius: 6px; min-height: 46px; font-weight: 650;
+}
+#login-form button:hover, #password-form button:hover { background: #ffad73; }
+#return-to-gallery, #header-options a, #header-options { color: #e5edf7; }
+:focus-visible { outline: 3px solid #f6914b; outline-offset: 3px; }
+@media (max-width: 480px) {
+  #logo-section { margin-top: 24px; }
+  #login-form, #register-form, #password-form, .profile-section {
+    width: calc(100% - 32px); padding: 26px 24px; margin: 12px auto 24px;
+  }
+}

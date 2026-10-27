@@ -5,6 +5,10 @@ application package, a vpsFree theme derived from bundled Modus, and separate
 portable state make the test installation suitable for later integration into
 the existing `int.web` container.
 
+The bundled white vpsFree wordmark comes from the existing vpsFree website's
+`obrazky/vpsFree-bile.png`. Gallery, login/profile and administration styling
+uses its blue/orange identity while retaining Piwigo's supported workflows.
+
 ## Scope
 
 Development target: `root@37.205.8.218`, preview `foto.crucio.cz`.
@@ -44,6 +48,9 @@ in `/var/lib/piwigo`, with `app` pointing to the built package.
 4. Old unsalted SHA1 passwords are replaced with random passwords, saved in
    the root-only access file. No email is sent. Deliver credentials securely
    and rotate them when handing over the gallery.
+   Outbound mail is disabled on the preview; configure the administrator's
+   real email and mail transport before enabling email-based recovery or
+   contributor notifications in production.
 5. Disable `installationMode`, verify permissions and direct-file access,
    apply HTTPS and a temporary preview access gate before exposing test data.
 
