@@ -1,0 +1,11 @@
+private/
+data/
+backups/
+result
+result-*
+*.sql
+*.sql.gz
+*.sqlite*
+.env
+credentials*
+.DS_Store

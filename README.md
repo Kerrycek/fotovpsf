@@ -1,0 +1,66 @@
+# Fotogalerie vpsFree.cz
+
+Piwigo 16.4.0 on NixOS 26.05 with PHP 8.4 and MariaDB 11.4. An immutable
+application package, a vpsFree theme derived from bundled Modus, and separate
+portable state make the test installation suitable for later integration into
+the existing `int.web` container.
+
+## Scope
+
+Development target: `root@37.205.8.218`, preview `foto.crucio.cz`.
+Original `root@172.16.9.28` is **read only**. No production cutover is included.
+All photo data, accounts, credentials, database dumps and receipts remain
+outside Git. The original PhotoShow archive is private and never served.
+
+## Deploy
+
+```sh
+nixos-rebuild build --flake /srv/fotovpsf#foto-test
+nixos-rebuild switch --flake /srv/fotovpsf#foto-test
+```
+
+`nixos/gallery.nix` exports `services.vpsfreeGallery`. Import this module on the
+eventual target alongside existing websites. Configure its hostname, public
+listening and TLS (disable local TLS when using the existing TLS proxy).
+Use the same package lock while rehearsing the move. The gallery has its own
+PHP pool and system user. MariaDB listens only on a Unix socket and uses a
+separate `/var/lib/mysql-piwigo` data directory, preserving old `/var/lib/mysql`.
+
+Application code/themes/plugins are read only in the Nix store. Update pinned
+packages through Git/Nix, not through the web interface. Writable state lives
+in `/var/lib/piwigo`, with `app` pointing to the built package.
+
+## Initial migration
+
+1. Copy the whole original PhotoShow tree into private staging on the NEW VPS.
+   Compare sorted SHA256 manifests of every source and archived file.
+2. Keep the initial listener on loopback, enable `installationMode`, then run
+   `python3 scripts/install.py` on the new VPS. It refuses a nonempty database.
+   Generated credentials stay in `/root/fotovpsf-access.json` (0600).
+3. Take a pre-import dump. Run `php scripts/import-photoshow.php` as root on
+   the new VPS. It refuses a nonempty gallery. Photos retain their bytes and
+   directory layout; album nesting, accounts and groups are imported. Source
+   XML/INI, profiles, old code and thumbnails remain in the private archive.
+4. Old unsalted SHA1 passwords are replaced with random passwords, saved in
+   the root-only access file. No email is sent. Deliver credentials securely
+   and rotate them when handing over the gallery.
+5. Disable `installationMode`, verify permissions and direct-file access,
+   apply HTTPS and a temporary preview access gate before exposing test data.
+
+An interrupted import must be inspected and restored from the pre-import
+backup before repeating. The import deliberately stops on symlinks, unknown
+image types, per-image ACLs or unmapped ACL principals instead of silently
+publishing data. Source PhotoShow defaults to public access when no inherited
+rights file exists. Recheck that assumption for a different source archive.
+
+## Migration to the original VPS
+
+Prepare a new gallery module in the managed `vpsfree-cz-configuration` repository;
+the original `/etc/nixos` files are stale. Build against that host's pinned
+Nixpkgs. Take a consistent database dump and archive `/var/lib/piwigo` during
+a short write freeze; copy the private source archive separately. Recreate
+the package/user/socket database on the target, import the dump and restore
+state ownership. Validate on a temporary local port before enabling the
+existing `foto.vpsfree.cz` virtual host. Test original hashes, albums, users,
+upload, private images, cache and TLS proxy headers. Keep the test VPS and
+pre-move backups for rollback. Production changes require a later instruction.
