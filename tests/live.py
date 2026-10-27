@@ -73,7 +73,9 @@ try:
     uploaded=admin.api('pwg.images.addSimple',{'category':private,'name':'QA private image'},('qa-private.png',png,'image/png'))
     info=admin.api('pwg.images.getInfo',{'image_id':uploaded['image_id']})
     derivative=info['derivatives']['thumb']['url']
-    assert admin.raw(derivative)[0]==200, 'Admin cannot view private derivative'
+    Path('/srv/foto-migration/private-image-diagnostic.json').write_text(json.dumps({'derivative':derivative,'element':info['element_url'],'image_id':uploaded['image_id']}))
+    derivative_response=admin.raw(derivative)
+    assert derivative_response[0]==200, f'Admin private derivative HTTP {derivative_response[0]}: {derivative_response[2][:80]!r}'
     assert anonymous.raw(derivative)[0]==403, 'Anonymous can view private derivative'
     assert member.raw(derivative)[0]==403, 'Unprivileged member can view private derivative'
     # Cached derivatives must be protected as well as i.php generation.
