@@ -94,3 +94,34 @@ Reapply `systemd-tmpfiles --create` after restoring state so managed code/policy
 symlinks and directory ownership match the target build. Test legacy
 PhotoShow URL redirects, mail settings and off-host backups before a production
 cutover; the preview does not change the original domain or its links.
+
+## Preview access and checks
+
+Retrieve credentials over your existing SSH connection (never put them in Git):
+
+```sh
+ssh root@37.205.8.218 'cat /root/fotovpsf-access.json'
+```
+
+Use `preview_username` / `preview_password` in the browser's first access
+prompt. Then sign in to the gallery with `admin_username` / `admin_password`.
+`migrated_users` contains replacement passwords for the two legacy accounts.
+The preview gate is temporary; leave it enabled while reviewing the migration.
+
+On the new VPS, `python3 /srv/fotovpsf/tests/health.py` performs read-only
+service, valid HTTPS/certificate, access-gate, image and data-count checks.
+Add `--full` to compare every original against the private import manifest.
+Its count baseline describes the imported preview; adjust it after deliberate
+user uploads or account changes. `tests/live.py` exercises disposable upload,
+moderation, private-image permissions and rejected file types on this preview.
+Do not run the mutation suite on the original gallery or over operator work.
+
+To rehearse a backup restore, verify `SHA256SUMS` **from inside the backup
+directory**, extract `piwigo-state.tar.gz` into a new private directory, create
+an unused MariaDB database and import `piwigo.sql` there. Compare original
+hashes against the private import manifest and check album/user/image counts.
+Never import a rehearsal over the live database. The archive omits managed
+`app` / `local/config/config.inc.php` symlinks and sessions: the target NixOS
+module recreates those. It includes private database configuration, so retain
+root-only permissions for all copies. Restore `preview-gate.tar.gz` and
+`access.json` privately when moving the preview as well.
