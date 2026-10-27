@@ -153,6 +153,11 @@ in {
           "^~ /upload/".extraConfig = "return 404;";
           "^~ /_data/logs/".extraConfig = "return 404;";
           "^~ /_data/templates_c/".extraConfig = "return 404;";
+          "^~ /_data/".extraConfig = "return 404;";
+          "^~ /_data/combined/".extraConfig = ''
+            if ($uri !~* \\.(css|js)$) { return 404; }
+            try_files $uri =404;
+          '';
           "^~ /_data/i/".extraConfig = ''
             auth_request /__gallery_image_auth;
             try_files $uri =404;

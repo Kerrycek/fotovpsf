@@ -17,7 +17,7 @@ function galleryOriginalPath(string $uri): ?string
         || preg_match('~(?:^|/)\.{1,2}(?:/|$)|[\x00-\x1f\\\\]~', $path)) {
         return null;
     }
-    $original = preg_replace('/-(?:sq|th|2s|xs|sm|me|la|xl|xx|cu_[0-9_]+)(\.[a-zA-Z0-9]+)$/', '$1', $path, 1, $count);
+    $original = preg_replace('/-(?:sq|th|2s|xs|sm|me|la|xl|xx|cu_[a-zA-Z0-9_]+)(\.[a-zA-Z0-9]+)$/', '$1', $path, 1, $count);
     return $count === 1 ? './'.$original : null;
 }
 if (PHP_SAPI === 'cli') return;
