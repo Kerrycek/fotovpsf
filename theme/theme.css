@@ -49,7 +49,9 @@ input[type=submit], button { cursor: pointer; }
   #menubar { padding: 10px 16px; }
   #breadcrumb h2 { font-size: 19px; }
   #breadcrumb { margin-left: 0; }
-  #menuSwitcher { top: 14px; left: 8px; width: 40px; height: 40px; color: white; border-radius: 6px; }
+  #menuSwitcher .pwg-icon { color: #fff; }
+  #menuSwitcher:hover .pwg-icon, #menuSwitcher:focus-visible .pwg-icon { color: var(--vpsfree-orange); }
+  #menuSwitcher { background: var(--vpsfree-blue); top: 14px; left: 8px; width: 40px; height: 40px; color: white; border-radius: 6px; }
   .albThumbs { padding: 0 4px; }
   .albLegend { padding: 22px 12px 10px; min-height: 65px; }
   .albLegend h4 { font-size: 17px; }

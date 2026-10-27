@@ -1,7 +1,9 @@
 /* Shared login/profile pages use Piwigo's supported templates and components. */
 #mode { background: #1f3959 !important; }
+#mode #header-options { position: static; min-height: 48px; max-width: 640px; margin: 0 auto; }
+#mode #header-options > * { padding: 14px 20px; }
 #logo-section { margin: 32px auto 24px; padding: 0 24px; }
-#logo-section #custom-logo { width: 205px; max-width: 100%; height: auto; }
+#logo-section #custom-logo { width: 205px; min-width: 0; max-width: 100%; height: auto; }
 #logo-section h1 { color: #fff; }
 #login-form, #register-form, #password-form, .profile-section {
   box-sizing: border-box; width: calc(100% - 40px); max-width: 460px;
