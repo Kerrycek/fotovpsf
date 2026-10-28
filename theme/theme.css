@@ -70,3 +70,21 @@ input[type=submit], button { cursor: pointer; }
   .albLegend h4 { font-size: 17px; }
 }
 @media (prefers-reduced-motion: reduce) { .albImg { transition: none; } }
+
+/* Horizontal navigation has one shared center line, including search/sign-in. */
+@media (min-width: 641px) {
+  #menubar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-height: 64px; padding: 10px 24px; }
+  #menubar > dl { display: block; float: none; position: relative; flex: 0 0 auto; margin: 0; padding: 0; }
+  #menubar > dl > dt { display: flex; align-items: center; min-height: 44px; padding: 0; margin: 0; font-size: 14px; font-weight: 500; line-height: 20px; }
+  #menubar > dl > dt > a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 8px; line-height: 20px; white-space: nowrap; }
+  #menubar > dl > dd { top: 100%; }
+  #menubar > dl:focus-within > dd { display: block; z-index: 5; }
+  #menubar > .vpsfree-search { display: flex; align-items: center; flex: 0 1 240px; margin-left: auto; }
+  #menubar .vpsfree-search form { width: 100%; }
+  #menubar .vpsfree-search #qsearchInput { width: 100%; max-width: none; height: 40px; margin: 0; font-size: 14px; }
+}
+@media (min-width: 641px) and (max-width: 1000px) {
+  #menubar { gap: 6px; padding: 10px 16px; }
+  #menubar > .vpsfree-search { order: 2; flex: 1 1 100%; max-width: none; margin: 0; }
+  #menubar > .vpsfree-account { margin-left: auto; }
+}

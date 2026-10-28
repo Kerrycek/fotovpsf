@@ -126,3 +126,13 @@ Never import a rehearsal over the live database. The archive omits managed
 module recreates those. It includes private database configuration, so retain
 root-only permissions for all copies. Restore `preview-gate.tar.gz` and
 `access.json` privately when moving the preview as well.
+
+## Album overview
+
+The home page shows albums containing visible photos directly, newest first.
+The imported year folders remain in the underlying hierarchy, preserving links
+and source organization. The theme's query hook retains Piwigo's user-cache and
+permission conditions. It orders by the latest visible photo date; imported
+albums retain their source year because early files have no EXIF dates and were
+recopied in 2016. A small year label distinguishes recurring events without
+requiring navigation through year folders. New albums use capture/upload dates.

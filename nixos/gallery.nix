@@ -56,6 +56,16 @@ let
       --replace-fail '<div id="pwgHead">' '<div id="pwgHead"><button id="vpsfree-admin-menu" type="button" aria-controls="menubar" aria-expanded="false" aria-label="Otevřít menu">☰</button>'
     substituteInPlace "$out/themes/standard_pages/template/header.tpl" \
       --replace-fail '</head>' '<link rel="stylesheet" href="{$ROOT_URL}standard-vpsfree.css">'$'\n'"</head>"
+    cat ${../php/gallery-view.php} >> "$out/themes/vpsfree/themeconf.inc.php"
+    substituteInPlace "$out/themes/vpsfree/template/menubar.tpl" \
+      --replace-fail '<dl style="float:none">' '<dl class="vpsfree-search">' \
+      --replace-fail '<dl style="float:right;margin-top:3px">' '<dl class="vpsfree-account">' \
+      --replace-fail '<dt style="font-size:100%;font-weight:normal;padding-left:15px{*to avoid loosing hover*}">' '<dt>' \
+      --replace-fail '<dt style="font-size:100%;font-weight:normal">' '<dt>' \
+      --replace-fail '{elseif $id=="mbTags"}' '{elseif $id=="mbCategories"}<dt><a href="{$ROOT_URL}">{"Albums"|translate}</a></dt>{elseif $id=="mbTags"}'
+    substituteInPlace "$out/themes/vpsfree/template/mainpage_categories.tpl" \
+      --replace-fail '<img class=albImg' '<img loading="lazy" decoding="async" class=albImg' \
+      --replace-fail '{if $item.nb_images}' '{if !empty($item.vpsfree_album_year)}{$item.vpsfree_album_year} · {/if}{if $item.nb_images}'
     cp ${../php/image-auth.php} "$out/image-auth.php"
     # Executable code is immutable. Core/plugin updates go through this flake.
   '';
@@ -81,6 +91,7 @@ let
     $conf['send_bcc_mail_webmaster'] = false;
     $conf['check_for_updates'] = false;
     $conf['nb_image_page'] = 60;
+    $conf['nb_categories_page'] = 48;
   '';
 in
 {
