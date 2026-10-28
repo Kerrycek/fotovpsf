@@ -39,6 +39,11 @@ with tempfile.TemporaryDirectory(prefix='db-restore-', dir='/srv/foto-migration'
             counts = subprocess.check_output(client+['piwigo','-e','SELECT (SELECT COUNT(*) FROM piwigo_images), '
                 '(SELECT COUNT(*) FROM piwigo_categories), (SELECT COUNT(*) FROM piwigo_users)'],text=True,stderr=log).strip()
             assert counts == expected, 'Restored image/album/user counts differ from checkpoint'
+            if len(sys.argv) > 4:
+                modern = subprocess.check_output(client+['piwigo','-e',
+                    "SELECT COUNT(*) FROM piwigo_users u JOIN piwigo_user_infos i ON i.user_id=u.id "
+                    "WHERE i.status <> 'guest' AND u.password LIKE '$argon2id$%'"],text=True,stderr=log).strip()
+                assert int(modern) == int(sys.argv[4]), 'Restored Argon2id account count differs'
             subprocess.run([str(package/'bin/mariadb-check'),'--no-defaults',f'--socket={socket}','--user=root','piwigo'],stdout=log,stderr=log,check=True)
             version = subprocess.check_output(client+['-e','SELECT VERSION()'],text=True,stderr=log).strip()
             assert version.startswith('11.4.13'), 'Unexpected rehearsal version'
