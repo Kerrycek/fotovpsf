@@ -73,7 +73,7 @@ input[type=submit], button { cursor: pointer; }
 
 /* Horizontal navigation has one shared center line, including search/sign-in. */
 @media (min-width: 641px) {
-  #menubar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-height: 64px; padding: 10px 24px; }
+  #menubar { display: flex; flex: 0 0 auto; align-items: center; flex-wrap: wrap; gap: 8px; min-height: 64px; padding: 10px 24px; }
   #menubar > dl { display: block; float: none; position: relative; flex: 0 0 auto; margin: 0; padding: 0; }
   #menubar > dl > dt { display: flex; align-items: center; min-height: 44px; padding: 0; margin: 0; font-size: 14px; font-weight: 500; line-height: 20px; }
   #menubar > dl > dt > a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 8px; line-height: 20px; white-space: nowrap; }
@@ -85,6 +85,6 @@ input[type=submit], button { cursor: pointer; }
 }
 @media (min-width: 641px) and (max-width: 1000px) {
   #menubar { gap: 6px; padding: 10px 16px; }
-  #menubar > .vpsfree-search { order: 2; flex: 1 1 100%; max-width: none; margin: 0; }
+  #menubar > .vpsfree-search { order: 2; flex: 1 1 calc(100% - 16px); max-width: none; margin: 0 8px; }
   #menubar > .vpsfree-account { margin-left: auto; }
 }
