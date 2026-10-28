@@ -176,5 +176,50 @@ The HTTP policy uses host-only HSTS for 30 days, without subdomain inclusion
 or preload. The CSP limits framing, objects, base URLs and form targets; it
 does not claim to sandbox inline scripts. Disable HSTS at an upstream proxy
 only when that proxy applies an equivalent policy. Database LOCAL INFILE and
-unused PHP session upload progress are disabled. Review dependency advisories,
-API login throttling and off-host backup/retention before production.
+unused PHP session upload progress are disabled. Review dependency advisories
+and off-host backup/retention before production.
+
+## Database and authentication maintenance
+
+The module pins MariaDB 11.4.13 from the official source with a verified hash
+while the base Nixpkgs pin still contains 11.4.12. InnoDB, Aria and MyISAM are
+retained; unused Mroonga, RocksDB and DuckDB engines are omitted. Keep the
+separate database directory and socket when moving the gallery.
+
+Core password functions use Argon2id (64 MiB, three passes, one thread),
+including new passwords and API-key secrets. Legacy phpass/MD5 and existing
+PHP password hashes can be verified and conditionally rehashed on a successful
+login. Wrong passwords never cause a rehash. The conditional update preserves
+a concurrent password reset. `scripts/rehash-passwords.php`, run as root only
+after a checkpoint, verifies the existing private credential receipt before
+rehashing accounts; it never resets changed passwords or prints credentials.
+Hash changes can invalidate old remember-me cookies; passwords stay the same.
+
+Form, password API and authentication-key login paths share a persistent
+source-address failure budget: five attempts, refilling one every 30 seconds.
+Successful attempts refund only their own reservation and never clear prior
+failures. Ordinary cookie-authenticated API/upload calls do not consume the
+login budget. Valid key requests refund their reservations as well. Exhaustion
+returns HTTP 429 with Retry-After, using native WS error encoding when available.
+State failures reject login temporarily rather than bypassing the limiter.
+
+Only Nginx's REMOTE_ADDR is used; forwarded headers require explicit trusted
+proxy configuration in Nginx. IPv6 addresses share a /64 bucket. Private state
+files are locked atomically, expire after a day of inactivity and are excluded
+from backups. No bucket is tied to a cookie or username. An operator can remove
+one affected source bucket over SSH if a shared network needs recovery.
+
+Run `php tests/authentication.php`, `python3 tests/authentication-live.py`
+(new VPS only), then the existing live/privacy and health suites. The auth live
+suite uses its own VPS source bucket, synthetic account and short-lived key;
+it checks concurrent failure limits, timed recovery, native form login and
+API-key compatibility without changing operator passwords. For a DB rehearsal,
+`python3 tests/database-restore.py BACKUP_DIR MARIADB_PACKAGE` starts new binaries
+on a private temporary socket, verifies/imports a trusted checkpoint and checks
+tables/counts. It never connects to or overwrites the live database.
+
+Build before switching. Freeze PHP writes across the final checkpoint and DB
+activation; keep the prior Nix generation and checkpoint. Old native Piwigo
+cannot verify Argon2id, so a rollback must retain this verifier or coordinate
+an appropriate database checkpoint under a write freeze. Never restore an old
+dump over later operator uploads or password changes.

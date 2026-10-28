@@ -51,6 +51,8 @@ try:
     # The response contains a secret: keep it only in memory, never print it.
     assert isinstance(created_key, dict) and 'auth_key' in created_key and 'apikey_secret' in created_key, 'API key response missing'
     key = created_key['auth_key']+':'+created_key['apikey_secret']
+    key_hash = subprocess.check_output(['mariadb','-N','piwigo','-e',f'SELECT apikey_secret FROM piwigo_user_auth_keys WHERE user_id={int(uid)}'], text=True).strip()
+    assert key_hash.startswith('$argon2id$'), 'New API key did not use Argon2id'
     keyed = Session()
     for _ in range(8):
         status, _, payload = keyed.raw('ws.php?format=json&method=pwg.session.getStatus', headers={'X-PIWIGO-API':key})
