@@ -157,3 +157,24 @@ slideshow, search/results and login at phone, tablet and desktop widths.
 Specifically check mobile nested menus and disabled first/last photo controls.
 Keep screenshots and audit receipts outside Git. Run `tests/health.py` on the
 new VPS and `php tests/gallery-view.php` to check services and overview scope.
+
+## Security regression checks
+
+`python3 tests/security.py` checks anonymous paths, administrative APIs, invalid
+date filters, session cookies, HTTPS and response headers without credentials
+or data writes. Run the live suite only on the new preview: it uses disposable
+albums/accounts to check upload rejection, roles, moderation, album/photo-level
+privacy, cached derivatives and CSRF tokens, then cleans up its own fixtures.
+
+The package requires CSRF tokens for cookie-authenticated album creation,
+album updates and image metadata updates where upstream accepts missing
+tokens. Direct validated API-key authentication remains supported. Cookie
+API clients must fetch `pwg_token` from `pwg.session.getStatus` and send it with
+these writes. UI and contributor upload workflows already do this.
+
+The HTTP policy uses host-only HSTS for 30 days, without subdomain inclusion
+or preload. The CSP limits framing, objects, base URLs and form targets; it
+does not claim to sandbox inline scripts. Disable HSTS at an upstream proxy
+only when that proxy applies an equivalent policy. Database LOCAL INFILE and
+unused PHP session upload progress are disabled. Review dependency advisories,
+API login throttling and off-host backup/retention before production.

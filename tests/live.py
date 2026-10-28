@@ -100,11 +100,26 @@ try:
         assert anonymous.raw(url)[0]==404, 'Internal/direct original path exposed'
     print('Private original, generated/cached derivative and internal-path protection passed')
     public_album=admin.api('pwg.categories.add',{'name':'QA upload '+secrets.token_hex(4),'status':'public'})['id'];categories.append(public_album)
+    for session in (admin,member):
+        saved_token=session.token
+        session.token=None
+        try:
+            session.api('pwg.categories.add',{'name':'QA missing-token rejection','parent':public_album},expect='fail')
+            session.api('pwg.categories.setInfo',{'category_id':public_album,'name':'QA missing-token rejection'},expect='fail')
+        finally:
+            session.token=saved_token
+    member_album=member.api('pwg.categories.add',{'name':'QA contributor album '+secrets.token_hex(4),'parent':public_album})['id'];categories.append(member_album)
     admin.api('pwg.categories.delete',{'category_id':public_album,'pwg_token':'invalid-audit-token'},expect='fail')
     high=admin.api('pwg.images.addSimple',{'category':public_album,'name':'QA privacy level','level':8},('qa-level.png',fixture_png(),'image/png'))
     images.append(high['image_id'])
     admin.api('pwg.images.uploadCompleted',{'category_id':public_album,'image_id':high['image_id']})
     high_info=admin.api('pwg.images.getInfo',{'image_id':high['image_id']})
+    saved_token=admin.token
+    admin.token=None
+    try:
+        admin.api('pwg.images.setInfo',{'image_id':high['image_id'],'name':'QA missing-token rejection'},expect='fail')
+    finally:
+        admin.token=saved_token
     high_derivative=high_info['derivatives']['thumb']['url']
     high_status=admin.raw(high_derivative)[0]
     assert high_status==200, f'Admin photo-level derivative HTTP {high_status}'

@@ -55,6 +55,10 @@ let
     cp ${../theme/admin.css} "$out/admin-vpsfree.css"
     cp ${../theme/admin.js} "$out/admin-vpsfree.js"
     cp ${../theme/standard-pages.css} "$out/standard-vpsfree.css"
+    # Cookie-authenticated writes need a token even where upstream makes it
+    # optional. Direct, validated API-key authentication has no ambient cookie.
+    substituteInPlace "$out/include/ws_functions/pwg.categories.php" "$out/include/ws_functions/pwg.images.php" \
+      --replace-fail "if (isset(\$params['pwg_token']) and get_pwg_token() != \$params['pwg_token'])" "if ((!isset(\$params['pwg_token']) and !defined('PWG_API_KEY_REQUEST')) or (isset(\$params['pwg_token']) and get_pwg_token() != \$params['pwg_token']))"
     # Versioned brand icons replace the bundled icon on every page type.
     for header in themes/vpsfree/template/header.tpl themes/default/template/header.tpl themes/standard_pages/template/header.tpl; do
       substituteInPlace "$out/$header" \
