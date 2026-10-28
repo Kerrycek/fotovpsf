@@ -8,13 +8,15 @@ let
   cfg = config.services.vpsfreeGallery;
   state = cfg.stateDirectory;
   # Patch-level security update while the pinned Nixpkgs still has 11.4.12.
-  mariadb = pkgs.mariadb.override {
+  mariadb = (pkgs.mariadb.override {
     version = "11.4.13";
     hash = "sha256-G7JUsQbQp8qHHPoY+m4Y1LgKdDD57J0VcexCcaE975Y=";
     # This gallery uses InnoDB/MyISAM; avoid unused optional engines.
     withStorageMroonga = false;
     withStorageRocks = false;
-  };
+  }).overrideAttrs (old: {
+    cmakeFlags = old.cmakeFlags ++ [ "-DPLUGIN_DUCKDB=NO" ];
+  });
   themeVersion = builtins.substring 0 12 (builtins.hashFile "sha256" ../theme/theme.css);
   faviconVersion = builtins.substring 0 12 (builtins.hashFile "sha256" ../assets/favicon.png);
   touchIconVersion = builtins.substring 0 12 (
