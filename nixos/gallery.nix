@@ -62,7 +62,7 @@ let
       --replace-fail '<dl style="float:right;margin-top:3px">' '<dl class="vpsfree-account">' \
       --replace-fail '<dt style="font-size:100%;font-weight:normal;padding-left:15px{*to avoid loosing hover*}">' '<dt>' \
       --replace-fail '<dt style="font-size:100%;font-weight:normal">' '<dt>' \
-      --replace-fail '{elseif $id=="mbTags"}' '{elseif $id=="mbCategories"}<dt><a href="{$ROOT_URL}">{"Albums"|translate}</a></dt>{elseif $id=="mbTags"}'
+      --replace-fail '{elseif $id=="mbTags"}' '{elseif $id=="mbCategories"}<dt><a href="{$ROOT_URL}index.php?/categories">{"Albums"|translate}</a></dt>{elseif $id=="mbTags"}'
     substituteInPlace "$out/themes/vpsfree/template/mainpage_categories.tpl" \
       --replace-fail '<img class=albImg' '<img loading="lazy" decoding="async" class=albImg' \
       --replace-fail '{if $item.nb_images}' '{if !empty($item.vpsfree_album_year)}{$item.vpsfree_album_year} · {/if}{if $item.nb_images}'
