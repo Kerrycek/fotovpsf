@@ -203,6 +203,7 @@ in
       dataDir = "/var/lib/mysql-piwigo";
       settings.mysqld = {
         skip-networking = true;
+        local-infile = false;
         character-set-server = "utf8mb4";
         collation-server = "utf8mb4_unicode_ci";
       };
@@ -246,6 +247,8 @@ in
         session.cookie_httponly = On
         session.cookie_samesite = Lax
         session.use_strict_mode = On
+        ; PHP's 2026-10-23 advisory recommends disabling this unused feature.
+        session.upload_progress.enabled = Off
         session.cookie_secure = ${if cfg.externalHTTPS || cfg.tls then "On" else "Off"}
         mysqli.default_socket = /run/mysqld/mysqld.sock
         sendmail_path = /run/current-system/sw/bin/false
@@ -291,6 +294,7 @@ in
     };
     services.nginx = {
       enable = true;
+      serverTokens = false;
       recommendedTlsSettings = true;
       recommendedOptimisation = true;
       appendHttpConfig = ''
@@ -320,6 +324,8 @@ in
           add_header X-Frame-Options SAMEORIGIN always;
           add_header Referrer-Policy same-origin always;
           add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+          add_header Content-Security-Policy "frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'" always;
+          ${lib.optionalString cfg.tls ''add_header Strict-Transport-Security "max-age=2592000" always;''}
         '';
         locations = {
           "= /favicon.ico".extraConfig = "return 302 /favicon-${faviconVersion}.png;";

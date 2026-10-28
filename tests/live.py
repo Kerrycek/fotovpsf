@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """New-VPS integration checks using disposable QA albums, never source photos."""
-import base64
 import atexit
 import http.cookiejar
 import json
@@ -13,7 +12,6 @@ import urllib.request
 
 access = json.loads(Path('/root/fotovpsf-access.json').read_text())
 base = 'https://foto.crucio.cz'
-basic = 'Basic '+base64.b64encode((access['preview_username']+':'+access['preview_password']).encode()).decode()
 
 class Session:
     def __init__(self):
@@ -21,7 +19,7 @@ class Session:
         self.token = None
     def raw(self, url, data=None, headers=None):
         if not url.startswith(base): url = base+'/'+url.lstrip('/')
-        request = urllib.request.Request(url, data=data, headers={'Authorization':basic, **(headers or {})})
+        request = urllib.request.Request(url, data=data, headers=headers or {})
         try:
             with self.opener.open(request, timeout=90) as response:
                 return response.status, response.headers, response.read()
@@ -65,6 +63,7 @@ group_id=admin.api('pwg.groups.getList',{'name':'uploaders'})['groups'][0]['id']
 admin.api('pwg.groups.addUser',{'group_id':group_id,'user_id':member_id})
 member=Session();member.login(member_name,member_password)
 member.api('pwg.users.getList',expect='fail')
+member.api('pwg.history.search',expect='fail')
 anonymous.api('pwg.categories.add',{'name':'should-not-exist'},expect='fail')
 public=anonymous.api('pwg.images.getInfo',{'image_id':1})
 assert anonymous.raw(public['derivatives']['thumb']['url'])[0]==200
@@ -101,6 +100,17 @@ try:
         assert anonymous.raw(url)[0]==404, 'Internal/direct original path exposed'
     print('Private original, generated/cached derivative and internal-path protection passed')
     public_album=admin.api('pwg.categories.add',{'name':'QA upload '+secrets.token_hex(4),'status':'public'})['id'];categories.append(public_album)
+    admin.api('pwg.categories.delete',{'category_id':public_album,'pwg_token':'invalid-audit-token'},expect='fail')
+    high=admin.api('pwg.images.addSimple',{'category':public_album,'name':'QA privacy level','level':8},('qa-level.png',fixture_png(),'image/png'))
+    images.append(high['image_id'])
+    high_info=admin.api('pwg.images.getInfo',{'image_id':high['image_id']})
+    high_derivative=high_info['derivatives']['thumb']['url']
+    assert admin.raw(high_derivative)[0]==200
+    for session in (anonymous,member):
+        session.api('pwg.images.getInfo',{'image_id':high['image_id']},expect='fail')
+        assert session.raw(high_derivative)[0]==403
+        assert session.raw(high_derivative.replace('/i.php?/','/_data/i/'))[0]==403
+    print('Invalid CSRF token and photo-level privacy in a public album passed')
     good=member.api('pwg.images.addSimple',{'category':public_album,'name':'QA contributor image'},('qa-member.png',fixture_png(),'image/png'))
     images.append(good['image_id'])
     member.api('pwg.images.uploadCompleted',{'category_id':public_album,'image_id':good['image_id']})
