@@ -8,6 +8,10 @@ let
   cfg = config.services.vpsfreeGallery;
   state = cfg.stateDirectory;
   themeVersion = builtins.substring 0 12 (builtins.hashFile "sha256" ../theme/theme.css);
+  faviconVersion = builtins.substring 0 12 (builtins.hashFile "sha256" ../assets/favicon.png);
+  touchIconVersion = builtins.substring 0 12 (
+    builtins.hashFile "sha256" ../assets/apple-touch-icon.png
+  );
   skinName = "vpsfree-${builtins.substring 0 12 (builtins.hashFile "sha256" ../theme/skin.inc.php)}";
   php = pkgs.php84.buildEnv {
     extensions =
@@ -46,9 +50,18 @@ let
     cp ${../theme/skin.inc.php} "$out/themes/vpsfree/skins/${skinName}.inc.php"
     cp ${../theme/skin.css} "$out/themes/vpsfree/skins/${skinName}.css"
     cp ${../assets/vpsfree-white.png} "$out/themes/vpsfree/logo.png"
+    cp ${../assets/favicon.png} "$out/favicon-${faviconVersion}.png"
+    cp ${../assets/apple-touch-icon.png} "$out/apple-touch-icon-${touchIconVersion}.png"
     cp ${../theme/admin.css} "$out/admin-vpsfree.css"
     cp ${../theme/admin.js} "$out/admin-vpsfree.js"
     cp ${../theme/standard-pages.css} "$out/standard-vpsfree.css"
+    # Versioned brand icons replace the bundled icon on every page type.
+    for header in themes/vpsfree/template/header.tpl themes/default/template/header.tpl themes/standard_pages/template/header.tpl; do
+      substituteInPlace "$out/$header" \
+        --replace-fail '<link rel="shortcut icon" type="image/x-icon" href="{$ROOT_URL}{$themeconf.icon_dir}/favicon.ico">' '<link rel="icon" type="image/png" sizes="16x16" href="{$ROOT_URL}favicon-${faviconVersion}.png"><link rel="apple-touch-icon" sizes="171x171" href="{$ROOT_URL}apple-touch-icon-${touchIconVersion}.png">'
+    done
+    substituteInPlace "$out/admin/themes/default/template/header.tpl" \
+      --replace-fail '<link rel="icon" type="image/svg+xml" href="{$ROOT_URL}{$themeconf.icon_dir}/piwigo.org-icon 1.svg">' '<link rel="icon" type="image/png" sizes="16x16" href="{$ROOT_URL}favicon-${faviconVersion}.png"><link rel="apple-touch-icon" sizes="171x171" href="{$ROOT_URL}apple-touch-icon-${touchIconVersion}.png">'
     substituteInPlace "$out/themes/vpsfree/themeconf.inc.php" \
       --replace-fail 'Theme Name: modus' 'Theme Name: vpsFree' \
       --replace-fail '$this->assign( array(' '$conf["modus_theme"]["skin"] = "${skinName}"; $themeconf["colorscheme"] = "dark"; $this->assign( array('
@@ -309,6 +322,7 @@ in
           add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
         '';
         locations = {
+          "= /favicon.ico".extraConfig = "return 302 /favicon-${faviconVersion}.png;";
           "/".extraConfig = "index index.php; try_files $uri $uri/ /index.php?$query_string;";
           "~ (^|/)\\.".extraConfig = "return 404;";
           "^~ /local/".extraConfig = "return 404;";

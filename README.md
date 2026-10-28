@@ -8,6 +8,9 @@ the existing `int.web` container.
 The bundled white vpsFree wordmark comes from the existing vpsFree website's
 `obrazky/vpsFree-bile.png`. Gallery, login/profile and administration styling
 uses its blue/orange identity while retaining Piwigo's supported workflows.
+The favicon and Apple touch icon are the existing vpsFree website assets from
+`obrazky/favicon.png` and `obrazky/ctverec.png`. Versioned URLs refresh browser
+icon caches across gallery, sign-in and administration pages.
 
 ## Scope
 
