@@ -108,6 +108,7 @@ input[type=submit], button { cursor: pointer; }
   #menubar > dl > dt > a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 8px; line-height: 20px; white-space: nowrap; }
   #menubar > dl > dd { top: 100%; min-width: 240px; max-height: calc(100dvh - 180px); overflow-y: auto; padding: 8px; border: 1px solid #38516e; border-radius: 6px; box-shadow: 0 8px 24px #07172966; }
   #menubar > dl > dd a { display: flex; align-items: center; min-height: 40px; padding: 6px 10px; line-height: 20px; }
+  #menubar > dl > dd li { display: flex; align-items: center; gap: 4px; }
   #menubar > dl:focus-within > dd { display: block; z-index: 5; }
   #menubar > .vpsfree-search { display: flex; align-items: center; flex: 0 1 240px; margin-left: auto; }
   #menubar .vpsfree-search form { width: 100%; }

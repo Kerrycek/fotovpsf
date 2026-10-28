@@ -137,3 +137,20 @@ permission conditions. It orders by the latest visible photo date; imported
 albums retain their source year because early files have no EXIF dates and were
 recopied in 2016. A small year label distinguishes recurring events without
 requiring navigation through year folders. New albums use capture/upload dates.
+
+## Theme checks
+
+The child theme supplies a native Modus blue/orange skin rather than inheriting
+the newspaper skin's white controls. Its content-hashed name invalidates the
+compiled palette cache; the layout stylesheet also has a content-hashed URL.
+Preserve the newline before `</head>` in package substitutions: Piwigo needs
+that marker to inject the dynamic thumbnail layout CSS.
+
+Use `tests/browser-audit.js` as a read-only DOM expression through the browser
+tool. It checks overflow, white chrome, photo-control bounds/size/icon presence,
+popup bounds and contrast, search contrast, menu centering and image loading.
+Exercise home, album, photo, metadata, open size/sort menus, running/paused
+slideshow, search/results and login at phone, tablet and desktop widths.
+Specifically check mobile nested menus and disabled first/last photo controls.
+Keep screenshots and audit receipts outside Git. Run `tests/health.py` on the
+new VPS and `php tests/gallery-view.php` to check services and overview scope.
