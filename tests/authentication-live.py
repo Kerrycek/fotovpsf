@@ -14,6 +14,14 @@ import urllib.request
 from client import Session, load_access
 
 access = load_access()
+subprocess.run(['php', '-r', '''
+chdir('/var/lib/piwigo/app'); define('PHPWG_ROOT_PATH','./');
+$_SERVER['REMOTE_ADDR']='127.0.0.1'; $_SERVER['SCRIPT_NAME']='/index.php';
+include './include/common.inc.php'; require_once './include/passwordhash.class.php';
+$_SESSION['fake_user_cache']=['id'=>null,'password'=>(new PasswordHash(13,true))->HashPassword('synthetic stale dummy')];
+$dummy=generate_fake_user(); if (!str_starts_with($dummy['password'],'$argon2id$')) exit(1);
+echo "Native stale fake-user cache refreshed to Argon2id\\n";
+'''], check=True)
 admin = Session()
 admin.login(access['admin_username'], access['admin_password'])
 name = 'qa-auth-'+secrets.token_hex(6)

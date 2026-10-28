@@ -73,7 +73,8 @@ let
       --replace-fail 'function pwg_password_hash(' 'function vpsfree_original_password_hash(' \
       --replace-fail 'function pwg_password_verify(' 'function vpsfree_original_password_verify(' \
       --replace-fail 'function try_log_user(' 'function vpsfree_original_try_log_user(' \
-      --replace-fail 'function auth_key_login(' 'function vpsfree_original_auth_key_login('
+      --replace-fail 'function auth_key_login(' 'function vpsfree_original_auth_key_login(' \
+      --replace-fail "if (!isset(\$_SESSION['fake_user_cache']) || \$is_verify_hash_changed)" "if (!isset(\$_SESSION['fake_user_cache']['password']) || \$is_verify_hash_changed || password_needs_rehash(\$_SESSION['fake_user_cache']['password'], PASSWORD_ARGON2ID, VPSFREE_ARGON_OPTIONS))"
     # Cookie-authenticated writes need a token even where upstream makes it
     # optional. Direct, validated API-key authentication has no ambient cookie.
     substituteInPlace "$out/include/ws_functions/pwg.categories.php" "$out/include/ws_functions/pwg.images.php" \
