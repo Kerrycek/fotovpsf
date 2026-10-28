@@ -48,6 +48,9 @@
     const link = box.querySelector('a');
     if (link && contrast(rgb(getComputedStyle(link).color), background(link)) < 4.5) errors.push('Low-contrast popup: ' + box.id);
   }
+  for (const control of document.querySelectorAll('.mcs-container .filter, .filter-manager, .filter-validate, .filter-form, .mcs-no-result .text span')) {
+    if (visible(control) && contrast(rgb(getComputedStyle(control).color), background(control)) < 4.5) errors.push('Low-contrast search control: ' + control.className);
+  }
   const menu = document.querySelector('#menubar');
   if (innerWidth > 1000 && visible(menu)) {
     const centers = [...menu.querySelectorAll(':scope > dl')].filter(visible).map(e => { const r = e.getBoundingClientRect(); return r.top + r.height / 2; });

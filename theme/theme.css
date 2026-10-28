@@ -123,5 +123,5 @@ input[type=submit], button { cursor: pointer; }
   #thePicturePage #imageToolBar .actionButtons { background: #16273f; opacity: 1; border: 1px solid #55718e; border-radius: 6px; box-shadow: 0 8px 24px #07172966; }
   #thePicturePage #imageToolBar .actionButtons .pwg-button { display: flex; justify-content: flex-start; width: 100%; height: auto; min-height: 44px; padding: 0 12px; }
   .switchBox { max-height: 50dvh; }
-  .categoryActions { background: #16273f; opacity: 1; border: 1px solid #55718e; border-radius: 6px; box-shadow: 0 8px 24px #07172966; }
+  #theCategoryPage .categoryActions { background: #16273f; opacity: 1; border: 1px solid #55718e; border-radius: 6px; box-shadow: 0 8px 24px #07172966; }
 }
