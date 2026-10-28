@@ -52,6 +52,7 @@ input[type=submit], button { cursor: pointer; }
 /* Modus uses a font icon set but inherits these empty sprite-only controls. */
 #thePicturePage #imageToolBar .pwg-icon-clock-minus::before { content: "−"; font-family: system-ui, sans-serif; }
 #thePicturePage #imageToolBar .pwg-icon-clock-plus::before { content: "+"; font-family: system-ui, sans-serif; }
+#thePicturePage #imageToolBar .pwg-icon-play::before { content: "▶"; font-family: system-ui, sans-serif; }
 #thePicturePage #imageToolBar .pwg-icon-repeat-play::before,
 #thePicturePage #imageToolBar .pwg-icon-repeat-stop::before { content: "↻"; font-family: system-ui, sans-serif; }
 #thePicturePage #imageToolBar .pwg-icon-repeat-stop { text-decoration: line-through; }
