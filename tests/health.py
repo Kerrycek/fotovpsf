@@ -34,7 +34,7 @@ for service in ('mysql', 'nginx', 'phpfpm-piwigo', 'piwigo-backup.timer'):
 assert not command('systemctl', '--failed', '--no-legend'), 'Failed systemd unit'
 assert request('')[0] == 200, 'Anonymous gallery browsing unavailable'
 status, payload = request('ws.php?format=json&method=pwg.users.getList')
-assert status == 200 and json.loads(payload)['stat'] == 'fail', 'Anonymous administration API is accessible'
+assert status in (401, 403) or (status == 200 and json.loads(payload)['stat'] == 'fail'), 'Anonymous administration API is accessible'
 status, payload = request('ws.php?format=json&method=pwg.images.getInfo&image_id=1')
 assert status == 200
 info = json.loads(payload)

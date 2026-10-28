@@ -109,7 +109,8 @@ with `admin_username` / `admin_password` for administration and uploads.
 The former `preview_*` gate credentials are unused while `basicAuthFile = null`.
 
 On the new VPS, `python3 /srv/fotovpsf/tests/health.py` performs read-only
-service, valid HTTPS/certificate, public-browsing, administrator-authentication, image and data-count checks.
+service, valid HTTPS/certificate, public browsing, administrator authentication,
+image and data-count checks.
 Add `--full` to compare every original against the private import manifest.
 Its count baseline describes the imported preview; adjust it after deliberate
 user uploads or account changes. `tests/live.py` exercises disposable upload,
