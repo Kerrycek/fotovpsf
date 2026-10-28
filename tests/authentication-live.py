@@ -14,7 +14,7 @@ import urllib.request
 from client import Session, load_access
 
 access = load_access()
-subprocess.run(['php', '-r', '''
+subprocess.run(['runuser', '-u', 'piwigo', '--', 'php', '-r', '''
 chdir('/var/lib/piwigo/app'); define('PHPWG_ROOT_PATH','./');
 $_SERVER['REMOTE_ADDR']='127.0.0.1'; $_SERVER['SCRIPT_NAME']='/index.php';
 include './include/common.inc.php'; require_once './include/passwordhash.class.php';
