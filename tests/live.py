@@ -103,9 +103,11 @@ try:
     admin.api('pwg.categories.delete',{'category_id':public_album,'pwg_token':'invalid-audit-token'},expect='fail')
     high=admin.api('pwg.images.addSimple',{'category':public_album,'name':'QA privacy level','level':8},('qa-level.png',fixture_png(),'image/png'))
     images.append(high['image_id'])
+    admin.api('pwg.images.uploadCompleted',{'category_id':public_album,'image_id':high['image_id']})
     high_info=admin.api('pwg.images.getInfo',{'image_id':high['image_id']})
     high_derivative=high_info['derivatives']['thumb']['url']
-    assert admin.raw(high_derivative)[0]==200
+    high_status=admin.raw(high_derivative)[0]
+    assert high_status==200, f'Admin photo-level derivative HTTP {high_status}'
     for session in (anonymous,member):
         session.api('pwg.images.getInfo',{'image_id':high['image_id']},expect='fail')
         assert session.raw(high_derivative)[0]==403
