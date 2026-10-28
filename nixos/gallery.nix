@@ -7,6 +7,7 @@
 let
   cfg = config.services.vpsfreeGallery;
   state = cfg.stateDirectory;
+  themeVersion = builtins.substring 0 12 (builtins.hashFile "sha256" ../theme/theme.css);
   php = pkgs.php84.buildEnv {
     extensions =
       { enabled, all }:
@@ -48,7 +49,7 @@ let
     substituteInPlace "$out/themes/vpsfree/themeconf.inc.php" \
       --replace-fail 'Theme Name: modus' 'Theme Name: vpsFree'
     substituteInPlace "$out/themes/vpsfree/template/header.tpl" \
-      --replace-fail '</head>' '<link rel="stylesheet" href="{$ROOT_URL}themes/vpsfree/theme.css"></head>'
+      --replace-fail '</head>' '<link rel="stylesheet" href="{$ROOT_URL}themes/vpsfree/theme.css?v=${themeVersion}"></head>'
     substituteInPlace "$out/admin/themes/default/template/header.tpl" \
       --replace-fail '</head>' '<link rel="stylesheet" href="{$ROOT_URL}admin-vpsfree.css"><script src="{$ROOT_URL}admin-vpsfree.js" defer></script></head>' \
       --replace-fail '<div id="pwgHead">' '<div id="pwgHead"><button id="vpsfree-admin-menu" type="button" aria-controls="menubar" aria-expanded="false" aria-label="Otevřít menu">☰</button>'
