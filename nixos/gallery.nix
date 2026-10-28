@@ -7,6 +7,14 @@
 let
   cfg = config.services.vpsfreeGallery;
   state = cfg.stateDirectory;
+  # Patch-level security update while the pinned Nixpkgs still has 11.4.12.
+  mariadb = pkgs.mariadb.override {
+    version = "11.4.13";
+    hash = "sha256-G7JUsQbQp8qHHPoY+m4Y1LgKdDD57J0VcexCcaE975Y=";
+    # This gallery uses InnoDB/MyISAM; avoid unused optional engines.
+    withStorageMroonga = false;
+    withStorageRocks = false;
+  };
   themeVersion = builtins.substring 0 12 (builtins.hashFile "sha256" ../theme/theme.css);
   faviconVersion = builtins.substring 0 12 (builtins.hashFile "sha256" ../assets/favicon.png);
   touchIconVersion = builtins.substring 0 12 (
@@ -182,7 +190,7 @@ in
     };
     environment.systemPackages = [
       php
-      pkgs.mariadb
+      mariadb
       pkgs.python3
       pkgs.unzip
       pkgs.git
@@ -202,7 +210,7 @@ in
     ];
     services.mysql = {
       enable = true;
-      package = pkgs.mariadb;
+      package = mariadb;
       # Deliberately independent of any pre-existing /var/lib/mysql on the target.
       dataDir = "/var/lib/mysql-piwigo";
       settings.mysqld = {
@@ -278,7 +286,7 @@ in
         pkgs.util-linux
         pkgs.gnutar
         pkgs.gzip
-        pkgs.mariadb
+        mariadb
         pkgs.git
         pkgs.systemd
       ];
