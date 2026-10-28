@@ -108,8 +108,9 @@ function vpsfree_login_response(int $status, int $retry): never
         $title = $status === 429 ? 'Chvilku prosím počkejte' : 'Přihlášení je dočasně nedostupné';
         $link = htmlspecialchars(get_root_url().'identification.php', ENT_QUOTES, 'UTF-8');
         echo '<!doctype html><html lang="cs"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-            .'<title>'.$title.' | vpsFree.cz</title><style>body{margin:0;background:#1f3959;color:#edf3fa;font:16px/1.6 system-ui;display:grid;min-height:100vh;place-items:center}main{margin:24px;padding:32px;max-width:440px;background:#16273f;border-radius:12px}h1{color:#f6914b;font-size:24px}a{color:#f6914b}</style>'
-            .'<main><h1>'.$title.'</h1><p>Zkuste přihlášení znovu za '.$retry.' sekund.</p><a href="'.$link.'">Zpět na přihlášení</a></main></html>';
+            .'<title>'.$title.' | vpsFree.cz</title><style>body{margin:0;background:#1f3959;color:#edf3fa;font:16px/1.6 system-ui;display:grid;min-height:100vh;place-items:center}main{margin:24px;padding:32px;max-width:440px;background:#16273f;border-radius:12px}h1{color:#f6914b;font-size:24px}a{color:#f6914b}:focus-visible{outline:3px solid #f6914b;outline-offset:4px}</style>'
+            .'<main><h1>'.$title.'</h1>'.($status === 429 ? '<p>Příliš mnoho chybných pokusů o přihlášení z této sítě.</p>' : '')
+            .'<p>Zkuste přihlášení znovu přibližně za '.$retry.' s.</p><a href="'.$link.'">Zpět na přihlášení</a></main></html>';
     }
     exit;
 }
