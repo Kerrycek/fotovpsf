@@ -9,3 +9,5 @@ result-*
 .env
 credentials*
 .DS_Store
+__pycache__/
+*.py[cod]
