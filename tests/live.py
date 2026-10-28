@@ -100,6 +100,7 @@ try:
         assert anonymous.raw(url)[0]==404, 'Internal/direct original path exposed'
     print('Private original, generated/cached derivative and internal-path protection passed')
     public_album=admin.api('pwg.categories.add',{'name':'QA upload '+secrets.token_hex(4),'status':'public'})['id'];categories.append(public_album)
+    admin.api('pwg.categories.setInfo',{'category_id':public_album,'name':'QA valid-token album'})
     for session in (admin,member):
         saved_token=session.token
         session.token=None
@@ -114,6 +115,7 @@ try:
     images.append(high['image_id'])
     admin.api('pwg.images.uploadCompleted',{'category_id':public_album,'image_id':high['image_id']})
     high_info=admin.api('pwg.images.getInfo',{'image_id':high['image_id']})
+    admin.api('pwg.images.setInfo',{'image_id':high['image_id'],'name':'QA valid-token photo','single_value_mode':'replace'})
     saved_token=admin.token
     admin.token=None
     try:
