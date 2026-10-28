@@ -130,6 +130,7 @@ root-only permissions for all copies. Restore `preview-gate.tar.gz` and
 ## Album overview
 
 The home page shows albums containing visible photos directly, newest first.
+Up to 48 albums fit on one scrollable page, with lazy-loaded cover images.
 The imported year folders remain in the underlying hierarchy, preserving links
 and source organization. The theme's query hook retains Piwigo's user-cache and
 permission conditions. It orders by the latest visible photo date; imported

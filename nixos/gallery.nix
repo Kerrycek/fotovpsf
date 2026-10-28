@@ -91,7 +91,6 @@ let
     $conf['send_bcc_mail_webmaster'] = false;
     $conf['check_for_updates'] = false;
     $conf['nb_image_page'] = 60;
-    $conf['nb_categories_page'] = 48;
   '';
 in
 {

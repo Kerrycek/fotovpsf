@@ -4,6 +4,9 @@ if (!defined('PHPWG_ROOT_PATH')) {
     exit;
 }
 
+// A scrollable overview fits the complete migrated collection on one page.
+$conf['nb_categories_page'] = 48;
+
 add_event_handler('loc_begin_index_category_thumbnails_query', 'vpsfree_album_overview_query');
 add_event_handler('loc_end_index_category_thumbnails', 'vpsfree_album_overview_labels', 60);
 
