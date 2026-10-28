@@ -8,6 +8,7 @@ let
   cfg = config.services.vpsfreeGallery;
   state = cfg.stateDirectory;
   themeVersion = builtins.substring 0 12 (builtins.hashFile "sha256" ../theme/theme.css);
+  skinName = "vpsfree-${builtins.substring 0 12 (builtins.hashFile "sha256" ../theme/skin.inc.php)}";
   php = pkgs.php84.buildEnv {
     extensions =
       { enabled, all }:
@@ -42,12 +43,15 @@ let
     ln -s ${state}/galleries "$out/galleries"
     cp -r "$out/themes/modus" "$out/themes/vpsfree"
     cp ${../theme/theme.css} "$out/themes/vpsfree/theme.css"
+    cp ${../theme/skin.inc.php} "$out/themes/vpsfree/skins/${skinName}.inc.php"
+    cp ${../theme/skin.css} "$out/themes/vpsfree/skins/${skinName}.css"
     cp ${../assets/vpsfree-white.png} "$out/themes/vpsfree/logo.png"
     cp ${../theme/admin.css} "$out/admin-vpsfree.css"
     cp ${../theme/admin.js} "$out/admin-vpsfree.js"
     cp ${../theme/standard-pages.css} "$out/standard-vpsfree.css"
     substituteInPlace "$out/themes/vpsfree/themeconf.inc.php" \
-      --replace-fail 'Theme Name: modus' 'Theme Name: vpsFree'
+      --replace-fail 'Theme Name: modus' 'Theme Name: vpsFree' \
+      --replace-fail '$this->assign( array(' '$conf["modus_theme"]["skin"] = "${skinName}"; $themeconf["colorscheme"] = "dark"; $this->assign( array('
     # Piwigo inserts runtime CSS/head elements at "\n</head>"; preserve it.
     substituteInPlace "$out/themes/vpsfree/template/header.tpl" \
       --replace-fail '</head>' '<link rel="stylesheet" href="{$ROOT_URL}themes/vpsfree/theme.css?v=${themeVersion}">'$'\n'"</head>"
