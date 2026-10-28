@@ -49,7 +49,17 @@ input[type=submit], button { cursor: pointer; }
 #thePicturePage #imageToolBar .pwg-icon { color: #edf3fa; }
 #thePicturePage #imageToolBar a:hover .pwg-icon { color: var(--vpsfree-orange); }
 #thePicturePage #imageToolBar .pwg-state-disabled .pwg-icon { color: #8ca1ba; }
+/* Modus uses a font icon set but inherits these empty sprite-only controls. */
+#thePicturePage #imageToolBar .pwg-icon-clock-minus::before { content: "−"; font-family: system-ui, sans-serif; }
+#thePicturePage #imageToolBar .pwg-icon-clock-plus::before { content: "+"; font-family: system-ui, sans-serif; }
+#thePicturePage #imageToolBar .pwg-icon-repeat-play::before,
+#thePicturePage #imageToolBar .pwg-icon-repeat-stop::before { content: "↻"; font-family: system-ui, sans-serif; }
+#thePicturePage #imageToolBar .pwg-icon-repeat-stop { text-decoration: line-through; }
+#slideshow #imageToolBar .navigationButtons { display: flex; flex-wrap: wrap; justify-content: flex-end; float: none; gap: 4px; }
 #thePicturePage #imageToolBar .actionButtons { background: transparent; }
+@media (min-width: 601px) {
+  #thePicturePage #imageToolBar #imageActionsSwitch { display: none; }
+}
 #thePicturePage #imageToolBar .switchBox { background: #16273f; color: #edf3fa; border: 1px solid #71849c; border-radius: 6px; max-width: calc(100vw - 32px); max-height: min(60vh, 480px); overflow-y: auto; }
 #thePicturePage #imageToolBar .switchBox a { color: #edf3fa; }
 #thePicturePage #imageToolBar .switchBox a:hover { color: var(--vpsfree-orange); }

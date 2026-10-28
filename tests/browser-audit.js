@@ -37,6 +37,7 @@
       if (r.height < 39 || r.width < 39) errors.push('Small photo control: ' + (button.title || button.id));
       if (!inPopup && (r.top < bar.top - 1 || r.bottom > bar.bottom + 1 || r.left < bar.left - 1 || r.right > bar.right + 1)) errors.push('Photo control escapes toolbar: ' + (button.title || button.id));
       const icon = button.querySelector('.pwg-icon');
+      if (icon && !icon.textContent.trim() && ['none', 'normal', '""'].includes(getComputedStyle(icon, '::before').content) && getComputedStyle(icon).backgroundImage === 'none') errors.push('Empty photo icon: ' + (button.title || button.id));
       if (icon && !button.classList.contains('pwg-state-disabled') && contrast(rgb(getComputedStyle(icon).color), background(button)) < 3) errors.push('Low-contrast photo icon: ' + (button.title || button.id));
     }
   }
