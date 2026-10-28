@@ -12,12 +12,12 @@ body { background: var(--vpsfree-blue); color: #edf3fa; font-family: "Open Sans"
 a { color: var(--vpsfree-orange); }
 a:hover, a:focus-visible { color: #ffd0ad; }
 h2, h3, .titlePage h2 { color: var(--vpsfree-orange); }
-#menubar, #menubar dl, #menubar dd { background: #fff; }
-#menubar { padding: 12px 24px; border-bottom: 1px solid #dce3eb; }
-#menubar dt, #menubar dt a, #menubar a, #menubar .menuInfoCat { color: #1f3959; text-shadow: none; }
-#menubar dt:hover, #menubar dt a:hover, #menubar a:hover { color: #a94e0c; }
-#qsearchInput { color: #1f3959; background: #eef2f6; border: 1px solid #d8e0e9; padding: 8px 12px; }
-#qsearchInput::placeholder { color: #63758a; opacity: 1; }
+#menubar, #menubar dl, #menubar dd { background: #16273f; }
+#menubar { padding: 12px 24px; border-bottom: 1px solid #38516e; }
+#menubar dt, #menubar dt a, #menubar a, #menubar .menuInfoCat { color: #edf3fa; text-shadow: none; }
+#menubar dt:hover, #menubar dt a:hover, #menubar a:hover { color: var(--vpsfree-orange); }
+#qsearchInput { color: #edf3fa; background: #203c5c; border: 1px solid #55718e; padding: 8px 12px; }
+#qsearchInput::placeholder { color: #d1dce9; opacity: 1; }
 .content { background: var(--vpsfree-blue); color: #edf3fa; border: 0; padding: 18px; }
 .content .titrePage { background: transparent; padding: 12px 6px 22px; margin-bottom: 8px; min-height: 58px; }
 #breadcrumb h2 { font-size: 22px; line-height: 1.4; font-weight: 650; color: var(--vpsfree-orange); padding: 0; }

@@ -24,6 +24,7 @@
     openFirewall = true;
     tls = true;
     installationMode = false;
-    basicAuthFile = "/var/lib/piwigo-preview/htpasswd";
+    # Public browsing approved; Piwigo still authenticates upload/admin actions.
+    basicAuthFile = null;
   };
 }

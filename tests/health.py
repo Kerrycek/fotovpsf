@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Read-only health check on the configured preview VPS; never prints secrets."""
-import base64
 import json
 import subprocess
 import sys
@@ -18,16 +17,11 @@ if subprocess.run(['systemctl', 'is-active', '--quiet', 'piwigo-backup']).return
     print('Consistent backup running; PHP is intentionally paused. Check again later.')
     sys.exit(0)
 
-access = json.loads(Path('/root/fotovpsf-access.json').read_text())
-base = access['url'].rstrip('/') + '/'
-auth = base64.b64encode(
-    (access['preview_username'] + ':' + access['preview_password']).encode()
-).decode()
+base = 'https://foto.crucio.cz/'
 
 
-def request(path, authenticated=True):
-    headers = {'Authorization': 'Basic ' + auth} if authenticated else {}
-    req = urllib.request.Request(urllib.parse.urljoin(base, path), headers=headers)
+def request(path):
+    req = urllib.request.Request(urllib.parse.urljoin(base, path))
     try:
         with urllib.request.urlopen(req, timeout=30) as response:
             return response.status, response.read()
@@ -38,8 +32,9 @@ def request(path, authenticated=True):
 for service in ('mysql', 'nginx', 'phpfpm-piwigo', 'piwigo-backup.timer'):
     assert command('systemctl', 'is-active', service) == 'active', service
 assert not command('systemctl', '--failed', '--no-legend'), 'Failed systemd unit'
-assert request('', False)[0] == 401, 'Preview gate is missing'
-assert request('')[0] == 200, 'Gallery unavailable'
+assert request('')[0] == 200, 'Anonymous gallery browsing unavailable'
+status, payload = request('ws.php?format=json&method=pwg.users.getList')
+assert status == 200 and json.loads(payload)['stat'] == 'fail', 'Anonymous administration API is accessible'
 status, payload = request('ws.php?format=json&method=pwg.images.getInfo&image_id=1')
 assert status == 200
 info = json.loads(payload)
@@ -61,4 +56,4 @@ if '--full' in sys.argv:
         path = Path('/var/lib/piwigo/galleries/legacy') / item['path']
         assert hashlib.sha256(path.read_bytes()).hexdigest() == item['sha256'], 'Original checksum mismatch'
     print('All 476 original SHA256 checksums match')
-print('HTTPS/certificate, preview gate, gallery, thumbnail, internal paths, services and data counts passed')
+print('HTTPS/certificate, public browsing, admin authentication, thumbnail, internal paths, services and data counts passed')

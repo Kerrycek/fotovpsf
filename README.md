@@ -103,13 +103,13 @@ Retrieve credentials over your existing SSH connection (never put them in Git):
 ssh root@37.205.8.218 'cat /root/fotovpsf-access.json'
 ```
 
-Use `preview_username` / `preview_password` in the browser's first access
-prompt. Then sign in to the gallery with `admin_username` / `admin_password`.
+The preview now allows public browsing, as requested. Sign in to the gallery
+with `admin_username` / `admin_password` for administration and uploads.
 `migrated_users` contains replacement passwords for the two legacy accounts.
-The preview gate is temporary; leave it enabled while reviewing the migration.
+The former `preview_*` gate credentials are unused while `basicAuthFile = null`.
 
 On the new VPS, `python3 /srv/fotovpsf/tests/health.py` performs read-only
-service, valid HTTPS/certificate, access-gate, image and data-count checks.
+service, valid HTTPS/certificate, public-browsing, administrator-authentication, image and data-count checks.
 Add `--full` to compare every original against the private import manifest.
 Its count baseline describes the imported preview; adjust it after deliberate
 user uploads or account changes. `tests/live.py` exercises disposable upload,
