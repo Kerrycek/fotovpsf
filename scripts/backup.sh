@@ -25,7 +25,7 @@ finish() {
 }
 trap finish EXIT
 mariadb-dump --lock-all-tables --hex-blob piwigo > "$backup_dir/piwigo.sql"
-tar -C "$(dirname "$gallery_state")" --exclude="$state_name/app" --exclude="$state_name/sessions" --exclude="$state_name/local/config/config.inc.php" -czpf "$backup_dir/piwigo-state.tar.gz" "$state_name"
+tar -C "$(dirname "$gallery_state")" --exclude="$state_name/app" --exclude="$state_name/sessions" --exclude="$state_name/auth-throttle" --exclude="$state_name/local/config/config.inc.php" -czpf "$backup_dir/piwigo-state.tar.gz" "$state_name"
 if [[ -f /root/fotovpsf-access.json ]]; then
   cp -p /root/fotovpsf-access.json "$backup_dir/access.json"
 fi

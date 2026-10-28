@@ -8,15 +8,17 @@ let
   cfg = config.services.vpsfreeGallery;
   state = cfg.stateDirectory;
   # Patch-level security update while the pinned Nixpkgs still has 11.4.12.
-  mariadb = (pkgs.mariadb.override {
-    version = "11.4.13";
-    hash = "sha256-G7JUsQbQp8qHHPoY+m4Y1LgKdDD57J0VcexCcaE975Y=";
-    # This gallery uses InnoDB/MyISAM; avoid unused optional engines.
-    withStorageMroonga = false;
-    withStorageRocks = false;
-  }).overrideAttrs (old: {
-    cmakeFlags = old.cmakeFlags ++ [ "-DPLUGIN_DUCKDB=NO" ];
-  });
+  mariadb =
+    (pkgs.mariadb.override {
+      version = "11.4.13";
+      hash = "sha256-G7JUsQbQp8qHHPoY+m4Y1LgKdDD57J0VcexCcaE975Y=";
+      # This gallery uses InnoDB/MyISAM; avoid unused optional engines.
+      withStorageMroonga = false;
+      withStorageRocks = false;
+    }).overrideAttrs
+      (old: {
+        cmakeFlags = old.cmakeFlags ++ [ "-DPLUGIN_DUCKDB=NO" ];
+      });
   themeVersion = builtins.substring 0 12 (builtins.hashFile "sha256" ../theme/theme.css);
   faviconVersion = builtins.substring 0 12 (builtins.hashFile "sha256" ../assets/favicon.png);
   touchIconVersion = builtins.substring 0 12 (
@@ -65,6 +67,13 @@ let
     cp ${../theme/admin.css} "$out/admin-vpsfree.css"
     cp ${../theme/admin.js} "$out/admin-vpsfree.js"
     cp ${../theme/standard-pages.css} "$out/standard-vpsfree.css"
+    # Keep every core password/API-key call on the same modern verifier and
+    # every password/key login on one shared throttle (not the read/upload API).
+    substituteInPlace "$out/include/functions_user.inc.php" \
+      --replace-fail 'function pwg_password_hash(' 'function vpsfree_original_password_hash(' \
+      --replace-fail 'function pwg_password_verify(' 'function vpsfree_original_password_verify(' \
+      --replace-fail 'function try_log_user(' 'function vpsfree_original_try_log_user(' \
+      --replace-fail 'function auth_key_login(' 'function vpsfree_original_auth_key_login('
     # Cookie-authenticated writes need a token even where upstream makes it
     # optional. Direct, validated API-key authentication has no ambient cookie.
     substituteInPlace "$out/include/ws_functions/pwg.categories.php" "$out/include/ws_functions/pwg.images.php" \
@@ -102,6 +111,8 @@ let
   '';
   policy = pkgs.writeText "piwigo-policy.php" ''
     <?php
+    require_once '${../php/authentication.php}';
+    $conf['vpsfree_login_throttle_directory'] = '${state}/auth-throttle';
     $conf['gallery_title'] = 'Fotogalerie vpsFree.cz';
     $conf['page_banner'] = '<div class="vpsfree-brand"><a href="./"><img src="themes/vpsfree/logo.png" width="171" height="50" alt="vpsFree.cz"><small>Fotogalerie</small></a></div>';
     $conf['default_theme'] = 'vpsfree';
@@ -207,6 +218,7 @@ in
       "d ${state}/upload 0750 piwigo nginx -"
       "d ${state}/galleries 0750 piwigo nginx -"
       "d ${state}/sessions 0700 piwigo piwigo -"
+      "d ${state}/auth-throttle 0700 piwigo piwigo 1d"
       "L+ ${state}/local/config/config.inc.php - - - - ${policy}"
       "L+ ${state}/app - - - - ${app}"
     ];
@@ -275,6 +287,7 @@ in
         "${state}/upload"
         "${state}/galleries"
         "${state}/sessions"
+        "${state}/auth-throttle"
       ];
       RestrictAddressFamilies = lib.mkForce [ "AF_UNIX" ];
       NoNewPrivileges = true;
