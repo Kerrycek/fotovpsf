@@ -1,12 +1,14 @@
 # Working on this gallery
 
-- Original server `root@172.16.9.28` is READ ONLY. Never modify its files,
-  services or database. Never run the archived PhotoShow application.
-- All development, imports, uploads and test mutations belong on the new
-  `root@37.205.8.218` VPS. Production proxy and cutover are outside scope.
+- The user authorized porting the original PhotoShow to current PHP on
+  `root@172.16.9.28` on 2026-11-01. Work in an isolated preview with copied
+  state; preserve the original installation and unrelated hosted websites.
+- Keep Piwigo on `root@37.205.8.218` available for comparison. Do not change
+  the production proxy or switch the production domain without instruction.
 - Store photographs, source archives, account data, hashes, credentials,
   dumps, receipts and browser screenshots outside Git. Never log passwords.
-- Use MariaDB/MySQL, never SQLite. Keep gallery services independently
+- PhotoShow keeps its native filesystem/XML state; do not add a database.
+  Piwigo uses MariaDB/MySQL, never SQLite. Keep gallery services independently
   configurable for later integration alongside the original VPS websites.
 - Preserve privacy on direct original/derivative URLs, not only album pages.
 - Pin official releases with hashes. Keep executable application code read

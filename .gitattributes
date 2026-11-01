@@ -1,0 +1,2 @@
+# Unified diff context intentionally preserves the upstream source whitespace.
+photoshow/php85.patch -whitespace

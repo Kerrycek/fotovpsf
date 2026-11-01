@@ -223,3 +223,10 @@ activation; keep the prior Nix generation and checkpoint. Old native Piwigo
 cannot verify Argon2id, so a rollback must retain this verifier or coordinate
 an appropriate database checkpoint under a write freeze. Never restore an old
 dump over later operator uploads or password changes.
+
+## Original PhotoShow alternative
+
+A separate port of the original gallery to PHP 8.5, preserving native XML/file
+state without a database, is documented in [photoshow/README.md](photoshow/README.md).
+It runs as an isolated loopback preview and does not replace the Piwigo module
+or switch the production domain.

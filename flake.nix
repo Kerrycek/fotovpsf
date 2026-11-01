@@ -8,6 +8,7 @@
     inputs@{ nixpkgs, vpsadminos, ... }:
     {
       nixosModules.default = import ./nixos/gallery.nix;
+      nixosModules.photoshowPreview = import ./photoshow/module.nix;
       nixosConfigurations.foto-test = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         modules = [

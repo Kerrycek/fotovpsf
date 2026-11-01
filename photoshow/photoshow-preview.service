@@ -1,0 +1,33 @@
+[Unit]
+Description=Isolated original PhotoShow on PHP 8.5 (local preview)
+After=network.target
+
+[Service]
+Type=simple
+DynamicUser=yes
+User=photoshow-preview
+StateDirectory=photoshow-preview
+StateDirectoryMode=0700
+RuntimeDirectory=photoshow-preview
+RuntimeDirectoryMode=0700
+ExecStart=/srv/photoshow-php85-tools/bin/python3 /srv/fotovpsf-photoshow/photoshow/run-preview.py
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_INET AF_UNIX AF_NETLINK
+InaccessiblePaths=-/var/www -/var/lib/mysql -/var/lib/mysql-piwigo
+MemoryMax=1280M
+TasksMax=48
+
+[Install]
+WantedBy=multi-user.target
