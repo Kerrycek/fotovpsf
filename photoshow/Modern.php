@@ -31,12 +31,10 @@ final class Modern
                 http_response_code(403); exit('Platnost formuláře vypršela. Obnovte stránku.');
             }
         }
-        if ($post) {
-            self::$writeLock = fopen('/var/lib/photoshow-preview/request.lock', 'c');
-            if (!self::$writeLock || !flock(self::$writeLock, LOCK_EX)) {
-                http_response_code(503); header('Retry-After: 3'); exit('Zkuste požadavek za chvíli.');
-            }
-            chmod('/var/lib/photoshow-preview/request.lock', 0600);
+        // Readers must not see a photo between moving its ACL and its original.
+        self::$writeLock = fopen('/var/lib/photoshow-preview/request.lock', 'c');
+        if (!self::$writeLock || !flock(self::$writeLock, $post ? LOCK_EX : LOCK_SH)) {
+            http_response_code(503); header('Retry-After: 3'); exit('Zkuste požadavek za chvíli.');
         }
         ob_start(static function(string $body): string {
             foreach (headers_list() as $header) {
@@ -50,14 +48,44 @@ final class Modern
 
     private static $writeLock;
 
+    /** Bind sessions to the current credential, not merely a reusable username. */
+    public static function startIdentity(Account $account, ?int $now = null): void
+    {
+        $now ??= time();
+        session_regenerate_id(true);
+        $_SESSION['login'] = $account->login;
+        $_SESSION['auth_fingerprint'] = hash('sha256', $account->login."\0".$account->password);
+        $_SESSION['auth_started'] = $_SESSION['auth_seen'] = $now;
+        $_SESSION['csrf'] = bin2hex(random_bytes(32));
+    }
+
+    public static function sessionMatches(Account $account, ?int $now = null): bool
+    {
+        $now ??= time();
+        if (!is_string($account->login) || !is_string($account->password)
+            || !is_string($_SESSION['auth_fingerprint'] ?? null)
+            || !is_int($_SESSION['auth_started'] ?? null) || !is_int($_SESSION['auth_seen'] ?? null)
+            || $now < $_SESSION['auth_started'] || $now < $_SESSION['auth_seen']
+            || $now - $_SESSION['auth_started'] >= 43200 || $now - $_SESSION['auth_seen'] >= 1800
+            || !hash_equals($_SESSION['auth_fingerprint'], hash('sha256', $account->login."\0".$account->password))) return false;
+        $_SESSION['auth_seen'] = $now;
+        return true;
+    }
+
     /** Serialize state mutations, then replace XML atomically for concurrent readers. */
     public static function saveXml(SimpleXMLElement $xml, string $target): bool
+    {
+        $bytes = $xml->asXML();
+        if ($bytes === false) throw new RuntimeException('XML serialization failed');
+        return self::saveText($bytes, $target);
+    }
+
+    public static function saveText(string $bytes, string $target): bool
     {
         $temporary = tempnam(dirname($target), '.photoshow-xml-');
         if ($temporary === false) throw new RuntimeException('XML storage unavailable');
         try {
-            $bytes = $xml->asXML();
-            if ($bytes === false || file_put_contents($temporary, $bytes, LOCK_EX) !== strlen($bytes)) throw new RuntimeException('XML save failed');
+            if (file_put_contents($temporary, $bytes, LOCK_EX) !== strlen($bytes)) throw new RuntimeException('State save failed');
             chmod($temporary, 0600);
             if (!rename($temporary, $target)) throw new RuntimeException('XML replacement failed');
             return true;

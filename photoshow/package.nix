@@ -22,6 +22,7 @@ pkgs.stdenvNoCC.mkDerivation {
   patches = [ ./php85.patch ];
   postPatch = ''
     cp ${./Modern.php} src/classes/Modern.php
+    cp ${./StateFiles.php} src/classes/StateFiles.php
     mkdir -p src/security
     cp ${./login-gate.php} src/security/login-gate.php
     cp "$jquery" inc/jquery.js

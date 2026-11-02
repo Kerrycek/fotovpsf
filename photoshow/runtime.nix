@@ -21,7 +21,11 @@ pkgs.php85.buildEnv {
     session.cookie_httponly = 1
     session.cookie_samesite = Lax
     session.upload_progress.enabled = Off
+    session.gc_maxlifetime = 43200
+    session.gc_probability = 1
+    session.gc_divisor = 100
     allow_url_fopen = Off
     allow_url_include = Off
+    disable_functions = exec,shell_exec,system,passthru,popen,proc_open
   '';
 }

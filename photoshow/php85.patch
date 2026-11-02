@@ -81,7 +81,7 @@
  	public $password;
  
  	/// Name of the user (optional)
-@@ -135,7 +135,7 @@
+@@ -135,14 +135,14 @@
  
  			// Create accounts file
  			$xml	=	new SimpleXMLElement('<accounts></accounts>');
@@ -90,6 +90,14 @@
  			
  			// Set this account as root
  			$groups[] = "root";
+ 		}
+ 
+ 
+-		if( preg_match("/[^a-z0-9]/i", $login) || strlen($password) < 6){
++		if (!is_string($login) || !preg_match('/\A[a-zA-Z0-9]{1,80}\z/D', $login) || !is_string($password) || strlen($password) < 12 || strlen($password) > 1024){
+ 			return false;
+ 		}
+ 
 @@ -166,7 +166,7 @@
  	 * @author Thibaud Rohmer
  	 */
@@ -125,7 +133,16 @@
  	}
  
  	/**
-@@ -288,7 +286,7 @@
+@@ -275,7 +273,7 @@
+ 	 * @param string $email
+ 	 * @author Thibaud Rohmer
+ 	 */
+-	public static function edit($login=NULL, $old_password=NULL, $password=NULL, $name=NULL, $email=NULL, $groups=array(), $language=NULL){
++	public static function edit($login=NULL, $old_password=NULL, $password=NULL, $name=NULL, $email=NULL, $groups=NULL, $language=NULL){
+ 		/// Only the admin can modify other accounts
+ 		if( !CurrentUser::$admin && $login != CurrentUser::$account->login ){
+ 			return;
+@@ -288,12 +286,13 @@
  		}
  
  		/// Check password
@@ -134,16 +151,29 @@
  			return;
  		}
  
-@@ -310,7 +308,7 @@
+ 		/// Edit attributes
+-		if(isset($password) && strlen($password) > 4 ){
++		if (isset($password) && $password !== '') {
++            if (!is_string($password) || strlen($password) < 12 || strlen($password) > 1024) throw new InvalidArgumentException('Password must contain 12 to 1024 bytes');
+ 			$acc->password = Account::password($password);
+ 		}
+ 
+@@ -306,11 +305,12 @@
+ 		}
+ 
+ 
+-		if(isset($language)){
++		if (isset($language)) {
++            if (!is_string($language) || ($language !== '' && !in_array($language.'.ini', Settings::$ava_loc, true))) throw new InvalidArgumentException('Invalid language');
  			$acc->language = $language;
  		}
  
 -		if(CurrentUser::$admin && sizeof($groups) > 0){
-+		if(CurrentUser::$admin && is_array($groups) && sizeof($groups) > 0){
++		if(CurrentUser::$admin && is_array($groups)){
  			$acc->groups = $groups;
  		}
  
-@@ -338,7 +336,7 @@
+@@ -338,7 +338,7 @@
              $i++;
  		}
  		
@@ -152,7 +182,7 @@
  	}
  
  	/**
-@@ -497,7 +495,7 @@
+@@ -497,7 +497,7 @@
  		/// Language
  		echo "<div class='pure-control-group'>
  					<label>".Settings::_("settings","language")."</label>
@@ -180,7 +210,7 @@
  									}
  									if(isset($_POST['login'])){
  										$this->page = new Account($_POST['login']);
-@@ -211,7 +212,7 @@
+@@ -211,66 +212,29 @@
   	public static function move(){
  
   		/// Just to be really sure... 
@@ -189,20 +219,85 @@
   			return;
   		}
  
-@@ -254,10 +255,10 @@
-  	 * 
-  	 * @author Thibaud Rohmer
-  	 */
+- 		$from 	= File::r2a(stripslashes($_POST['pathFrom']));
+- 		$to  	= File::r2a(stripslashes($_POST['pathTo']));
+- 		$type 	= $_POST['move'];
+-
+- 		if($from == $to){
+- 			return;
+- 		}
+-
+- 		if($type == "rename"){
+- 			$thumbsDir = Settings::$thumbs_dir."/".stripslashes($_POST['pathFrom']);
+- 			@rename($from,dirname($from)."/".stripslashes($_POST['pathTo']));
+- 			@rename($thumbsDir,dirname($thumbsDir)."/".stripslashes($_POST['pathTo']));
+- 			return;
+- 		}
+-
+- 		if(is_file($from) || $type=="directory"){
+- 			@rename($from,$to."/".basename($from));
+- 			return;
+- 		}
+-
+-
+-
+- 		/// We are moving multiple files
+- 		$files = scandir($from);
+- 		foreach($files as $file){
+- 			if($file != "." && $file!=".."){
+-	 			@rename($from."/".$file,$to."/".$file);
+-	 		}
+- 		}
+-
+- 		return;
+-	}
+-
+-
+- 	/**
+- 	 * Delete files on the server
+- 	 * 
+- 	 * @author Thibaud Rohmer
+- 	 */
 - 	public function delete(){
-+ 	public static function delete(){
- 
-  		/// Just to be really sure... 
+-
+- 		/// Just to be really sure... 
 - 		if( !(CurrentUser::$admin || CurrentUser::$uploader) ){
-+ 		if(!CurrentUser::$admin){
-  			return;
-  		}
+- 			return;
+- 		}
+-
+- 		if(!is_array($_POST['del'])){
+-	 		$del 	=	File::r2a(stripslashes($_POST['del']));
+-	 		return 	Admin::rec_del($del);
+- 		}else{
+- 			foreach($_POST['del'] as $todel){
+-		 		$del 	=	File::r2a(stripslashes($todel));
+-		 		Admin::rec_del($del);
+- 			}
+- 		}
+-	}
++        $from = File::r2a($_POST['pathFrom'] ?? '');
++        $kind = $_POST['move'] ?? '';
++        if ($kind === 'rename') {
++            Modern::validateName($_POST['pathTo'] ?? '');
++            $to = dirname($from).'/'.$_POST['pathTo'];
++            StateFiles::move($from, $to);
++        } else {
++            $to = File::r2a($_POST['pathTo'] ?? '');
++            if (!is_dir($to)) throw new InvalidArgumentException('Destination is not an album');
++            if (is_file($from) || $kind === 'directory') StateFiles::move($from, $to.'/'.basename($from));
++            elseif ($kind === 'content') {
++                foreach (new DirectoryIterator($from) as $item) {
++                    if (!$item->isDot()) StateFiles::move($item->getPathname(), $to.'/'.$item->getFilename());
++                }
++            } else throw new InvalidArgumentException('Invalid move type');
++        }
++        return;
++    }
++
  
-@@ -278,8 +279,8 @@
+ 	/**
+ 	 * Reccursively delete all files in $dir
+@@ -278,8 +242,8 @@
  	 * @param string $dir
  	 * @author Thibaud Rohmer
  	 */
@@ -292,7 +387,7 @@
  
   		$allowedExtensions = array("tiff","jpg","jpeg","gif","png");
  		
-@@ -94,10 +94,13 @@
+@@ -94,16 +94,22 @@
   		}
  
   		/// Set upload path
@@ -309,7 +404,16 @@
  
   			$path = $path."/".stripslashes($_POST['newdir']);
   			if(!file_exists($path)){
-@@ -127,6 +130,8 @@
+  				@mkdir($path,0750,true);
+  				@mkdir(File::r2a(File::a2r($path),Settings::$thumbs_dir),0750,true);
+  			}
++
++ 			/// Existing child albums keep their own access boundary.
++            if (!Judge::view($path)) { http_response_code(403); return; }
+ 
+  			/// Setup rights
+  			if(!isset($_POST['inherit'])){
+@@ -127,6 +133,8 @@
  		
  				// Name on the website
  		        $name = $_FILES["images"]["name"][$key];
@@ -329,7 +433,7 @@
  	/// Board title : name of the directory listed
  	private $title;
      
-@@ -93,7 +95,7 @@
+@@ -93,17 +95,17 @@
  		$this->title	=	basename($this->path);
  		$this->header	=	new BoardHeader($this->title,$this->path);
  		$this->files	=	Menu::list_files($this->path);
@@ -338,15 +442,19 @@
  
          $pageURL = Settings::$site_address."/?f=".urlencode(File::a2r($this->path));
          
-@@ -101,7 +103,7 @@
+         // generate the header - opengraph metatags for facebook
          $this->page_header = "<meta property=\"og:url\" content=\"".$pageURL."\"/>\n"
-             ."<meta property=\"og:site_name\" content=\"".Settings::$name."\"/>\n"
+-            ."<meta property=\"og:site_name\" content=\"".Settings::$name."\"/>\n"
++            ."<meta property=\"og:site_name\" content=\"".htmlspecialchars(Settings::$name, ENT_QUOTES, 'UTF-8')."\"/>\n"
              ."<meta property=\"og:type\" content=\"article\"/>\n"
 -            ."<meta property=\"og:title\" content=\"".Settings::$name.": ".File::a2r($this->path)."\"/>\n";
-+            ."<meta property=\"og:title\" content=\"".Settings::$name.": ".htmlentities(File::a2r($this->path), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')."\"/>\n";
++            ."<meta property=\"og:title\" content=\"".htmlspecialchars(Settings::$name, ENT_QUOTES, 'UTF-8').": ".htmlentities(File::a2r($this->path), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')."\"/>\n";
          if (Settings::$fbappid){
-             $this->page_header .= "<meta property=\"fb:app_id\" content=\"".Settings::$fbappid."\"/>\n";
+-            $this->page_header .= "<meta property=\"fb:app_id\" content=\"".Settings::$fbappid."\"/>\n";
++            $this->page_header .= "<meta property=\"fb:app_id\" content=\"".htmlspecialchars(Settings::$fbappid, ENT_QUOTES, 'UTF-8')."\"/>\n";
          }
+ 
+         if (!empty($this->files))
 --- a/src/classes/BoardHeader.php
 +++ b/src/classes/BoardHeader.php
 @@ -61,7 +61,8 @@
@@ -451,15 +559,33 @@
  			try{
  				CurrentUser::login(stripslashes($_GET['login']),stripslashes($_GET['pass']));
  			}catch(Exception $e){
-@@ -155,6 +155,7 @@
+@@ -143,6 +143,11 @@
+ 		if (isset($_SESSION['login'])) {
+ 
+ 			self::$account = new Account($_SESSION['login']);
++            if (!Modern::sessionMatches(self::$account)) {
++                self::logout();
++                self::init();
++                return;
++            }
+ 
+ 			// groups sometimes can be null
+ 			$groups = self::$account->groups === NULL ? array() : self::$account->groups;
+@@ -154,6 +159,13 @@
+             $_SESSION['token'] = "";
  
  		}
- 
++
 +        Modern::authorizeActions();
++        // Check before dispatch: a denied response must not already have changed data.
++        foreach ((array)self::$path as $requested) {
++            if (!file_exists($requested)) { http_response_code(404); exit; }
++            if (!Judge::view($requested)) { http_response_code(403); exit; }
++        }
+ 
  		/// Set action (needed for page layout)
  		if(isset($_GET['t'])){
- 			switch($_GET['t']){
-@@ -224,7 +225,7 @@
+@@ -224,7 +236,7 @@
  								break;
  
  				case "Acc"	:	if(isset($_POST['old_password'])){
@@ -468,7 +594,7 @@
  									unset($_POST['old_password']);
  									CurrentUser::init();
  									return;
-@@ -314,10 +315,21 @@
+@@ -314,11 +326,21 @@
  
  		CurrentUser::$admin	=	false;
  
@@ -482,16 +608,17 @@
  
  		// Check password
 -		if(Account::password($password) == $acc->password){
+-			$_SESSION['login']		=	$login;
 +		if(isset($acc->login) && Modern::verifyPassword($password, $acc->password)){
 +            if(password_needs_rehash($acc->password, PASSWORD_ARGON2ID, ['memory_cost'=>65536, 'time_cost'=>3, 'threads'=>1])) {
 +                $acc->password = Account::password($password);
 +                $acc->save();
 +            }
-+            session_regenerate_id(true);
- 			$_SESSION['login']		=	$login;
++            Modern::startIdentity($acc);
  			CurrentUser::$account	=	$acc;
              $_SESSION['token']      =   NULL;
-@@ -332,6 +344,7 @@
+ 		}else{
+@@ -332,6 +354,7 @@
  			CurrentUser::$uploader = true;
  		}
  
@@ -499,7 +626,7 @@
  		return true;
  	}
  
-@@ -344,6 +357,8 @@
+@@ -344,6 +367,8 @@
  	 * @author Thibaud Rohmer
  	 */
  	public static function keyin($key){
@@ -508,6 +635,15 @@
  
  		CurrentUser::$admin	=	false;
  
+@@ -378,6 +403,8 @@
+ 		CurrentUser::$admin 	= false;
+ 		CurrentUser::$uploader 	= false;
+ 		session_unset();
++        session_regenerate_id(true);
++        $_SESSION['csrf'] = bin2hex(random_bytes(32));
+ 	}
+ 
+ }
 --- a/src/classes/Exif.php
 +++ b/src/classes/Exif.php
 @@ -126,7 +126,7 @@
@@ -635,7 +771,40 @@
              return true;
          } else {
              return false;
-@@ -329,7 +329,7 @@
+@@ -297,27 +297,11 @@
+      * @author Franck Royer
+      */
+     public static function view($key,$path){
+-        $rpath = File::a2r($path)."/";
+-        $apath = self::get_path($key)."/";
+-
+-        // Remove double slashes
+-        preg_replace('/\/\/+/','/', $rpath);
+-        preg_replace('/\/\/+/','/', $apath);
+-
+-         
+-        // Check if the tokens file exists
+-        if(!file_exists(CurrentUser::$tokens_file)){
+-            return false;
+-        }
+-
+-        if (!$apath || !$rpath){
+-            return false;
+-        }
+-
+-        if(preg_match("/^".preg_quote($apath, '/')."/", $rpath)){
+-            return true;
+-        }
+-        return false;
++        if (!is_string($key) || !self::exist($key)) return false;
++        $allowed = realpath(File::r2a(self::get_path($key)));
++        $requested = realpath($path);
++        return $allowed !== false && $requested !== false
++            && ($requested === $allowed || str_starts_with($requested, $allowed.'/'));
+ 
+     }
+ 
+@@ -329,7 +313,7 @@
       * @author Franck Royer
       */
      public static function generate_key(){
@@ -644,6 +813,15 @@
          return $key;
      }
  
+@@ -363,7 +347,7 @@
+             echo "<input type='submit' class='pure-button button-error' value='".Settings::_("token","deletetoken")."' />";
+             echo "</form>";
+             echo "</td>";
+-            echo "<td><a href='".self::get_url($t['key'])."' >".$t['path']."</a></td>";
++            echo "<td><a href='".self::get_url($t['key'])."' >".htmlspecialchars($t['path'], ENT_QUOTES, 'UTF-8')."</a></td>";
+             echo "</tr>";
+         }
+         echo "</tbody>";
 --- a/src/classes/ImagePanel.php
 +++ b/src/classes/ImagePanel.php
 @@ -46,6 +46,8 @@
@@ -655,15 +833,22 @@
  
      /// Header of the html page
      public $page_header;
-@@ -105,7 +107,7 @@
+@@ -103,12 +105,12 @@
+         
+         // generate the header - opengraph metatags for facebook
          $this->page_header = "<meta property=\"og:url\" content=\"".$pageURL."\"/>\n"
-             ."<meta property=\"og:site_name\" content=\"".Settings::$name."\"/>\n"
+-            ."<meta property=\"og:site_name\" content=\"".Settings::$name."\"/>\n"
++            ."<meta property=\"og:site_name\" content=\"".htmlspecialchars(Settings::$name, ENT_QUOTES, 'UTF-8')."\"/>\n"
              ."<meta property=\"og:type\" content=\"website\"/>\n"
 -            ."<meta property=\"og:title\" content=\"".Settings::$name.": ".File::a2r($file)."\"/>\n"
-+            ."<meta property=\"og:title\" content=\"".Settings::$name.": ".htmlentities(File::a2r($file), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')."\"/>\n"
++            ."<meta property=\"og:title\" content=\"".htmlspecialchars(Settings::$name, ENT_QUOTES, 'UTF-8').": ".htmlentities(File::a2r($file), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')."\"/>\n"
              ."<meta property=\"og:image\" content=\"".Settings::$site_address."/?t=Thb&f=".urlencode(File::a2r($file))."\"/>\n";
          if (Settings::$fbappid){
-             $this->page_header .= "<meta property=\"fb:app_id\" content=\"".Settings::$fbappid."\"/>\n";
+-            $this->page_header .= "<meta property=\"fb:app_id\" content=\"".Settings::$fbappid."\"/>\n";
++            $this->page_header .= "<meta property=\"fb:app_id\" content=\"".htmlspecialchars(Settings::$fbappid, ENT_QUOTES, 'UTF-8')."\"/>\n";
+         }
+ 
+ 		/// Set the Judge
 --- a/src/classes/Index.php
 +++ b/src/classes/Index.php
 @@ -54,11 +54,20 @@
@@ -710,6 +895,17 @@
  		/// Upload Images form
  			echo "<h3>Upload</h3>";
  			echo "<div id='files'></div>";
+--- a/src/classes/JS.php
++++ b/src/classes/JS.php
+@@ -50,7 +50,7 @@
+ 	public function __construct(){
+ 
+ 		/// Execute stuff automagically
+-		new Admin();
++		// CurrentUser::init has already dispatched the mutation exactly once.
+ 
+ 		if(isset($_GET['j'])){
+ 			switch($_GET['j']){
 --- a/src/classes/Judge.php
 +++ b/src/classes/Judge.php
 @@ -130,7 +130,7 @@
@@ -749,6 +945,17 @@
  		if(!isset(CurrentUser::$account) && !isset(CurrentUser::$token)){
  			// User is not logged in
  			$judge	=	new Judge($f);
+--- a/src/classes/MainPage.php
++++ b/src/classes/MainPage.php
+@@ -132,7 +132,7 @@
+ 		// Menu left
+ 		echo "<div id='menu'>\n";
+ 		echo "<span id='rss'><a href='?t=Rss'><i class='fa fa-rss fa-lg'></i></a></span>";
+-		echo "<span id='logo'>".Settings::$name."</span>\n";
++		echo "<span id='logo'>".htmlspecialchars(Settings::$name, ENT_QUOTES, 'UTF-8')."</span>\n";
+ 		echo "<div class='pure-menu menu pure-menu-open'>\n";
+ 		$this->menu->toHTML();
+ 		echo "</div></div>\n";
 --- a/src/classes/Menu.php
 +++ b/src/classes/Menu.php
 @@ -44,6 +44,8 @@
@@ -780,9 +987,12 @@
  				$list[]=$path;
 --- a/src/classes/Page.php
 +++ b/src/classes/Page.php
-@@ -60,7 +60,8 @@
+@@ -58,9 +58,10 @@
+ 			echo "<head>\n";
+ 			echo "<meta http-equiv='Content-Type' content='text/html; charset=utf-8'>\n";
  			echo "<meta name='viewport' content='width=device-width, initial-scale=1'>\n";
- 			echo "<title>".Settings::$name."</title>\n";
+-			echo "<title>".Settings::$name."</title>\n";
++			echo "<title>".htmlspecialchars(Settings::$name, ENT_QUOTES, 'UTF-8')."</title>\n";
  			echo "<meta name='author' content='Thibaud Rohmer'>\n";
 -			echo "<link rel='icon' type='image/ico' href='inc/favico.ico'>";
 +			echo "<link rel='icon' type='image/ico' href='inc/vpsfree-favicon.png'>";
@@ -832,6 +1042,15 @@
  			{
  				case 1:
  				case 2:
+@@ -120,7 +120,7 @@
+         /// Check item
+         $file_type = File::Type($file);
+ 
+-        if (!$file_type == "Video"){
++        if ($file_type !== "Video"){
+             error_log('ERROR/Provider.php: Vid called on a non-video file '.$file);
+             return;
+         }
 @@ -145,7 +145,7 @@
          header("Pragma: public");
          header("Cache-Control: max-age=360000");
@@ -841,6 +1060,15 @@
          header('Expires: ' . gmdate('D, d M Y H:i:s', time()+$expires) . ' GMT');
          header('Content-type: video/webm');
          readfile($path);
+@@ -185,7 +185,7 @@
+ 				$thumb->rotateImageNDegrees(Provider::get_orientation_degrees ($file));	
+ 			}
+ 			$thumb->save($path);
+-			chmod($path,0775);
++			chmod($path,0600);
+ 		}
+ 
+ 		/* Implementation of webp... for later.
 @@ -243,9 +243,7 @@
  		if( !Judge::view($file)){
  			return;
@@ -1032,6 +1260,53 @@
  
  		// Localization files path
  		Settings::$locpath = dirname(dirname(dirname(__FILE__)))."/inc/loc/";
+@@ -364,14 +366,20 @@
+ 	    "thumbs_size",
+    	    "rss"
+ 	    );
+-		$f = fopen(Settings::$admin_settings_file,"w");
+-
+-		foreach($var as $v){
+-			if(isset($_POST["$v"])){
+-				fwrite($f,"$v = \"".$_POST["$v"]."\"\n");
+-			}
+-		}
+-		fclose($f);
++        $text = '';
++        foreach ($var as $v) {
++            if (!isset($_POST[$v])) continue;
++            $value = $_POST[$v];
++            if (!is_string($value) || strlen($value) > 2048 || preg_match('/[\x00-\x1f\x7f]/', $value)) throw new InvalidArgumentException('Invalid setting');
++            if ($v === 'encode_video') throw new InvalidArgumentException('Video encoding is unavailable in this photo deployment');
++            if ($v === 'loc' && !in_array($value, Settings::$ava_loc, true)) throw new InvalidArgumentException('Invalid language');
++            if ($v === 'user_theme' && !in_array($value, Settings::$ava_themes, true)) throw new InvalidArgumentException('Invalid theme');
++            if ($v === 'thumbs_size' && (!ctype_digit($value) || (int)$value < 32 || (int)$value > 512)) throw new InvalidArgumentException('Invalid thumbnail size');
++            if ($v === 'max_comments' && (!ctype_digit($value) || (int)$value < 1 || (int)$value > 1000)) throw new InvalidArgumentException('Invalid comment limit');
++            if ($v === 'site_address' && $value !== Settings::$site_address) throw new InvalidArgumentException('Canonical URL is managed by deployment');
++            $text .= $v.' = "'.addcslashes($value, "\\\"\$").'"'."\n";
++        }
++        Modern::saveText($text, Settings::$admin_settings_file);
+ 		Settings::init(true);
+ 	}
+ 
+@@ -467,7 +475,7 @@
+ 		/// Thumbs size
+ 		echo "<div class='pure-control-group'>
+ 					<label>".Settings::_("settings","thumbs_size")."</label>
+-					<input type='text' name='max_img_dir' value=\"".htmlentities(Settings::$thumbs_size, ENT_QUOTES ,'UTF-8')."\">
++					<input type='text' name='thumbs_size' value=\"".htmlentities(Settings::$thumbs_size, ENT_QUOTES ,'UTF-8')."\">
+ 				</div>\n";
+ 
+ 		echo "<h2>Social Networks</h2>";
+@@ -491,7 +499,7 @@
+ 		echo "<span>".Settings::_("settings","video_comment")."</span>";
+ 		echo "<div class='pure-controls'>";
+ 		$c = (Settings::$encode_video)?"checked":"";
+-		echo "<label><input type='checkbox' name='encode_video' $c>Encode Video</label>\n";
++		echo "<label><input type='checkbox' name='encode_video' disabled $c>Encode Video</label>\n";
+ 		echo "</div>";
+ 
+ 		
 --- a/src/classes/Video.php
 +++ b/src/classes/Video.php
 @@ -43,6 +43,8 @@
@@ -1043,6 +1318,58 @@
  	/// URLencoded version of the relative path to file
  	static public $fileweb;
       
+--- a/src/js/keyboard.js
++++ b/src/js/keyboard.js
+@@ -29,27 +29,28 @@
+  */
+ $("document").ready(function(){
+ 	$("body").keyup(function(event){
++	if ($(event.target).is('input,textarea,select,[contenteditable]')) return;
+ 	var keyCode = event.which;
+ 	if (keyCode == 0 && event.keyCode != undefined)
+ 		keyCode = event.keyCode;
+ 	
+ 		switch(keyCode)
+ 		{
+-			case $.ui.keyCode.RIGHT	:
++			case 39	:
+ 				if($("#image_bar #next").is(":visible")){
+ 					$("#image_bar #next a").click();
+ 				}
+ 				event.preventDefault();
+ 				break;
+ 			
+-			case $.ui.keyCode.LEFT	:
++			case 37	:
+ 				if($("#image_bar #prev").is(":visible")){
+ 					$("#image_bar #prev a").click();
+ 				}
+ 				event.preventDefault();
+ 				break;
+ 				
+-			case $.ui.keyCode.UP	:
++			case 38	:
+ 				if ($("#image_bar #back").is(":visible")){
+ 					$("#image_bar #back").click();
+ 				}else if($("#image_bar #stop").is(":visible")){
+@@ -58,7 +59,7 @@
+ 				event.preventDefault();
+ 				break;
+ 
+-			case $.ui.keyCode.SPACE :
++			case 32 :
+ 				if($("#image_bar #pause").is(":visible")){
+ 					$("#image_bar #pause").click();
+ 				}else if($("#image_bar #play").is(":visible") || $("#image_bar #slideshow").is(":visible")){
+@@ -67,7 +68,7 @@
+ 				event.preventDefault();
+ 				break;
+ 
+-			case $.ui.keyCode.ESCAPE :
++			case 27 :
+ 				if($("#image_bar #stop").is(":visible")){
+ 					$("#image_bar #stop").click();
+ 				}
 --- a/src/phpthumb/GdThumb.inc.php
 +++ b/src/phpthumb/GdThumb.inc.php
 @@ -137,12 +137,12 @@
