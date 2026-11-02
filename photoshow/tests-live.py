@@ -89,6 +89,9 @@ try:
     check(admin.request('?a=Upl',{'path':'','newdir':album})[0]==403,'upload CSRF')
     check(admin.post('?a=Upl',{'path':'','newdir':album,'inherit':'1'})[0]==200,'create album')
     folder=state/'photos'/album;check(folder.is_dir(),'album exists')
+    import io,zipfile
+    empty_status,empty_zip,_=anonymous.request('?t=Zip&f='+urllib.parse.quote(album))
+    check(empty_status==200 and zipfile.ZipFile(io.BytesIO(empty_zip)).namelist()==[],'empty album ZIP')
     status,metadata,_=admin.post('?a=Upl',{'path':album,'newdir':'quote"<x>','inherit':'1'})
     og=re.search(rb'<meta property="og:title" content="([^"]*)"',metadata)
     check(status==200 and og and b'quote&quot;&lt;x&gt;' in og[1],'album metadata escaped')
@@ -113,9 +116,14 @@ try:
     for kind in ['Thb','Img','Big','BDl']:
         status,content,_=anonymous.request('?t='+kind+'&'+query)
         check(status==200 and content.startswith(b'\xff\xd8'),'public image '+kind)
-    import io,zipfile
     zip_status,zip_data,_=anonymous.request('?t=Zip&f='+urllib.parse.quote(album))
     check(zip_status==200 and len(zipfile.ZipFile(io.BytesIO(zip_data)).namelist())==1,'native ZIP download')
+    for extension,signature in [('png',b'\x89PNG'),('gif',b'GIF')]:
+        encoded=subprocess.check_output([php,'-r',f'$im=imagecreatetruecolor(80,60); image{extension}($im);'])
+        check(upload(admin,'format.'+extension,encoded)==200,'native '+extension+' upload')
+        image_query=urllib.parse.urlencode({'f':album+'/format.'+extension})
+        check(anonymous.request('?t=Big&'+image_query)[1]==encoded,extension+' original bytes')
+        check(anonymous.request('?t=Thb&'+image_query)[1].startswith(signature),extension+' GD thumbnail')
     admin.request('?f='+urllib.parse.quote(album))
     check(admin.post('?t=Pri&f='+urllib.parse.quote(album),{})[0]==200,'make album private')
     for kind in ['Page','Thb','Img','Big','BDl']:

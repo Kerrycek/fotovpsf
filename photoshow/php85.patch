@@ -534,7 +534,7 @@
  	}
  
  
-@@ -197,9 +199,9 @@
+@@ -197,17 +199,17 @@
  		}
  
  		$c = $xml->addChild("comment");
@@ -544,9 +544,10 @@
 -		$c->addChild("content"	, $comment->content);
 +		$c->addChild("content"	, htmlspecialchars($comment->content, ENT_XML1, 'UTF-8'));
  		$c->addChild("webfile"	, $this->webfile);
- 		$c->addChild("path" 	, File::a2r($this->file));
+-		$c->addChild("path" 	, File::a2r($this->file));
++		$c->addChild("path", htmlspecialchars(File::a2r($this->file), ENT_XML1, 'UTF-8'));
  
-@@ -207,7 +209,7 @@
+ 		while($xml->count() > Settings::$max_comments){
  			unset($xml->comment[0]);
  		}
  
@@ -769,8 +770,12 @@
          }
  
          // I like big keys
-@@ -120,7 +120,7 @@
-         $xml_token->addChild('path' ,$this->path);
+@@ -117,10 +117,10 @@
+ 
+         $xml_token=$xml->addChild('token');
+         $xml_token->addChild('key' ,$this->key);
+-        $xml_token->addChild('path' ,$this->path);
++        $xml_token->addChild('path', htmlspecialchars($this->path, ENT_XML1, 'UTF-8')); 
  
          // Saving into file
 -        $xml->asXML(CurrentUser::$tokens_file);
@@ -1011,7 +1016,7 @@
 +			echo "<title>".htmlspecialchars(Settings::$name, ENT_QUOTES, 'UTF-8')."</title>\n";
  			echo "<meta name='author' content='Thibaud Rohmer'>\n";
 -			echo "<link rel='icon' type='image/ico' href='inc/favico.ico'>";
-+			echo "<link rel='icon' type='image/ico' href='inc/vpsfree-favicon.png'>";
++			echo "<link rel='icon' type='image/png' href='inc/vpsfree-favicon.png'>";
 +			echo "<meta name='theme-color' content='#16273f' />";
  
  			/// CSS
@@ -1118,7 +1123,7 @@
              if(File::Type($path)=="Image"){
              	readfile($path);
              	return;
-@@ -324,61 +323,25 @@
+@@ -324,61 +323,27 @@
  	 * @return void
  	 * @author Thibaud Rohmer
  	 */
@@ -1189,7 +1194,9 @@
 +                $zip->addFile($file, $name);
 +                $zip->setCompressionName($name, ZipArchive::CM_STORE);
 +            }
++            $empty = $zip->numFiles === 0;
 +            $zip->close();
++            if ($empty) file_put_contents($temporary, "PK\x05\x06".str_repeat("\0", 18));
 +            header('Content-Type: application/zip');
 +            header('Content-Disposition: attachment; filename="album.zip"');
 +            header('Cache-Control: private, no-store');

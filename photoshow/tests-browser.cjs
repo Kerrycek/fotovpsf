@@ -153,6 +153,20 @@ if (!directory || directory.includes('/git/')) throw Error('Private output direc
       for (const a of ['Abo', 'Sta', 'VTk', 'Set', 'Acc', 'EdA']) { await go('?t=Adm&a=' + a); assert(!(await page.locator('body').innerText()).includes('Požadavek se nepodařilo')); }
       await go('?t=Acc');
     });
+    await check('native settings form saves unchanged displayed preferences', async () => {
+      await go('?t=Adm&a=Set');
+      const title = await page.title();
+      await Promise.all([page.waitForNavigation(), page.locator('form[action="?t=Adm&a=Set"] input[type=submit]').click()]);
+      assert.equal(await page.title(), title);
+      assert(await page.locator('form[action="?t=Adm&a=Set"]').isVisible());
+    });
+    await check('native delete removes only its synthetic duplicate photo', async () => {
+      await go('?f=' + q(run + '/Public/first-1.jpg'));
+      await page.locator('a[href="#menuright"]').click();
+      await Promise.all([page.waitForNavigation(), page.locator('form[action="?a=Del"] button[type=submit]').click()]);
+      assert.equal((await request(admin, '?t=Big&f=' + q(run + '/Public/first-1.jpg'))).status, 404);
+      assert.equal((await request(admin, '?t=Big&f=' + q(run + '/Public/first.jpg'))).status, 200);
+    });
     await check('uploader can add an album, member cannot upload', async () => {
       assert.equal((await request(uploader, '?a=Upl', { path: run, newdir: 'UploaderAlbum', inherit: '1' })).status, 200);
       assert.equal((await request(member, '?a=Upl', { path: run, newdir: 'DeniedAlbum', inherit: '1' })).status, 403);
@@ -219,6 +233,15 @@ if (!directory || directory.includes('/git/')) throw Error('Private output direc
     });
     await check('unsafe global settings are rejected without changing them', async () => {
       for (const values of [{ name: 'Audit\nInjected=1' }, { name: 'Audit', user_theme: '../../' }, { name: 'Audit', loc: '../../' }, { name: 'Audit', thumbs_size: '999999999' }, { name: 'Audit', encode_video: 'on' }]) assert.equal((await request(admin, '?t=Adm&a=Set', values)).status, 400);
+    });
+    await check('Unicode and ampersand album paths work with guest sharing', async () => {
+      const target = run + '/Zkouška & fotky';
+      await folder(run, 'Zkouška & fotky'); await request(admin, '?t=Pri&f=' + q(target), {});
+      const r = await request(admin, '?t=CTk&f=' + q(target), {});
+      const match = r.body.toString().match(/[?&](?:amp;)?token=([a-f0-9]{64})/); assert(match);
+      const visitor = await create(); assert.equal((await request(visitor, '?f=' + q(target) + '&token=' + match[1])).status, 200);
+      await request(admin, '?t=Adm&a=DTk', { tokenkey: match[1] });
+      assert.equal((await request(visitor, '?f=' + q(target))).status, 403);
     });
     await check('browser has no JavaScript errors', async () => assert.deepEqual(errors, []));
     await check('browser logout removes privileged access', async () => {
