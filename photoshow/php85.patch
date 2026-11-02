@@ -406,7 +406,7 @@
  
   		$allowedExtensions = array("tiff","jpg","jpeg","gif","png");
  		
-@@ -94,16 +94,22 @@
+@@ -94,10 +94,13 @@
   		}
  
   		/// Set upload path
@@ -423,15 +423,23 @@
  
   			$path = $path."/".stripslashes($_POST['newdir']);
   			if(!file_exists($path)){
-  				@mkdir($path,0750,true);
+@@ -105,12 +108,15 @@
   				@mkdir(File::r2a(File::a2r($path),Settings::$thumbs_dir),0750,true);
   			}
-+
+ 
 + 			/// Existing child albums keep their own access boundary.
 +            if (!Judge::view($path)) { http_response_code(403); return; }
- 
++
   			/// Setup rights
   			if(!isset($_POST['inherit'])){
+  				if(isset($_POST['public'])){
+  					Judge::edit($path);
+  				}else{
+- 					Judge::edit($path,$_POST['users'],$_POST['groups']);					
++ 					Judge::edit($path,$_POST['users'] ?? [],$_POST['groups'] ?? []);					
+  				}
+  			}
+  			$already_set_rights = true;
 @@ -127,6 +133,8 @@
  		
  				// Name on the website
@@ -441,6 +449,15 @@
  				
  				$info = pathinfo($name);
  				$base_name =  basename($name,'.'.$info['extension']);
+@@ -154,7 +162,7 @@
+  					if(isset($_POST['public'])){
+  						Judge::edit("$path/$name");
+  					}else{
+- 						Judge::edit("$path/$name",$_POST['users'],$_POST['groups']);					
++ 						Judge::edit("$path/$name",$_POST['users'] ?? [],$_POST['groups'] ?? []);					
+  					}
+  				}
+ 			}
 --- a/src/classes/Board.php
 +++ b/src/classes/Board.php
 @@ -46,6 +46,8 @@
@@ -855,6 +872,17 @@
              echo "</tr>";
          }
          echo "</tbody>";
+--- a/src/classes/Image.php
++++ b/src/classes/Image.php
+@@ -46,7 +46,7 @@
+ class Image implements HTMLObject
+ {
+ 	/// URLencoded version of the relative path to file
+-	static public $fileweb;
++	public $fileweb;
+ 	
+ 	/// URLencoded version of the relative path to directory containing file
+ 	private $dir;
 --- a/src/classes/ImagePanel.php
 +++ b/src/classes/ImagePanel.php
 @@ -46,6 +46,8 @@
