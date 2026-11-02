@@ -2,7 +2,7 @@
 import pathlib
 import sys
 root = pathlib.Path(sys.argv[1])
-for path in [root / 'index.php', *(root / 'src').rglob('*.php'), *(root / 'src/stylesheets').glob('*.css')]:
+for path in [root / 'index.php', root / 'inc/jquery.scrollTo.js', *(root / 'src').rglob('*.php'), *(root / 'src/stylesheets').glob('*.css')]:
     data = path.read_bytes()
     try:
         source = data.decode('utf-8')

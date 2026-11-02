@@ -13,7 +13,7 @@ for name in subprocess.check_output(['git','ls-files'],cwd=port,text=True).split
     except UnicodeDecodeError:
         try: a=before.decode('latin1').replace('\r\n','\n'); b=f.read_text()
         except UnicodeDecodeError: continue
-    if name=='index.php' or name.startswith('src/') and name.endswith(('.php','.css')):
+    if name in ('index.php','inc/jquery.scrollTo.js') or name.startswith('src/') and name.endswith(('.php','.css')):
         a=a.rstrip('\n')+'\n'; b=b.rstrip('\n')+'\n'
     if a!=b:
         patch.extend(difflib.unified_diff(a.splitlines(True),b.splitlines(True),fromfile='a/'+name,tofile='b/'+name))
