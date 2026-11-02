@@ -91,7 +91,7 @@ if (!directory || directory.includes('/git/')) throw Error('Private output direc
       await Promise.all([page.waitForNavigation(), chooser.setFiles({ name: 'first.jpg', mimeType: 'image/jpeg', buffer: image })]);
       assert.equal((await request(guest, '?t=Big&f=' + q(run + '/Public/first-1.jpg'))).status, 200);
     });
-    await check('album images, next/previous, keyboard and fullscreen', async () => {
+    await check('album images, next/previous and keyboard', async () => {
       await go('?f=' + q(run + '/Public'));
       await page.locator('.sectionimg .item a').first().click();
       await page.locator('.image_panel').waitFor({ state: 'visible' });
@@ -99,7 +99,38 @@ if (!directory || directory.includes('/git/')) throw Error('Private output direc
       const before = await page.url(); await page.keyboard.press('ArrowRight');
       await page.waitForFunction(previous => location.href !== previous, before);
       await page.keyboard.press('ArrowLeft');
+      await page.waitForFunction(previous => location.href === previous, before);
       assert(await page.locator('.image_panel').isVisible());
+    });
+    await check('slideshow start, pause, resume and stop', async () => {
+      await go('?f=' + q(run + '/Public/first.jpg'));
+      await page.locator('#image_bar #slideshow a').click();
+      await page.locator('#image_bar #pause a').waitFor({ state: 'visible' });
+      if (await page.evaluate(() => document.fullscreenEnabled || document.webkitFullscreenEnabled)) await page.waitForFunction(() => !!(document.fullscreenElement || document.webkitFullscreenElement));
+      const initialFullscreen = await page.evaluate(() => !!(document.fullscreenElement || document.webkitFullscreenElement));
+      await page.locator('#image_bar #pause a').click();
+      await page.locator('#image_bar #play a').waitFor({ state: 'visible' });
+      await page.locator('#image_bar #play a').click();
+      if (initialFullscreen) assert(await page.evaluate(() => !!(document.fullscreenElement || document.webkitFullscreenElement)), 'resume retains fullscreen');
+      await page.locator('#image_bar #stop a').click();
+      await page.locator('#image_bar #slideshow a').waitFor({ state: 'visible' });
+      await page.waitForFunction(() => !(document.fullscreenElement || document.webkitFullscreenElement));
+    });
+    await check('native browser original and ZIP downloads', async () => {
+      await go('?f=' + q(run + '/Public/first.jpg'));
+      const downloadEvent = page.waitForEvent('download');
+      await page.locator('#image_bar #get a').click();
+      const download = await downloadEvent;
+      const filename = path.join(directory, 'audit-download-original.jpg');
+      await download.saveAs(filename);
+      assert((await fs.readFile(filename)).equals(await fs.readFile(path.join(directory, 'photoshow-upload-test.jpg'))));
+      await go('?f=' + q(run + '/Public'));
+      await page.locator('a[href="#menuright"]').click();
+      const zipEvent = page.waitForEvent('download');
+      await page.locator('#menuright a[href^="?t=Zip"]').click();
+      const zip = await zipEvent;
+      const zipfile = path.join(directory, 'audit-download-album.zip'); await zip.saveAs(zipfile);
+      assert.equal((await fs.readFile(zipfile)).subarray(0, 2).toString(), 'PK');
     });
     await check('comment text and escaping through native browser form', async () => {
       await go('?f=' + q(run + '/Public/first.jpg'));
@@ -122,6 +153,10 @@ if (!directory || directory.includes('/git/')) throw Error('Private output direc
       for (const a of ['Abo', 'Sta', 'VTk', 'Set', 'Acc', 'EdA']) { await go('?t=Adm&a=' + a); assert(!(await page.locator('body').innerText()).includes('Požadavek se nepodařilo')); }
       await go('?t=Acc');
     });
+    await check('uploader can add an album, member cannot upload', async () => {
+      assert.equal((await request(uploader, '?a=Upl', { path: run, newdir: 'UploaderAlbum', inherit: '1' })).status, 200);
+      assert.equal((await request(member, '?a=Upl', { path: run, newdir: 'DeniedAlbum', inherit: '1' })).status, 403);
+    });
     await check('anonymous and member deny every privileged endpoint', async () => {
       for (const c of [guest, member]) for (const query of ['?t=Adm', '?j=Acc', '?j=Jud']) assert.equal((await request(c, query)).status, 403);
       assert.equal((await request(guest, '?t=Acc')).status, 403);
@@ -138,6 +173,9 @@ if (!directory || directory.includes('/git/')) throw Error('Private output direc
       for (const c of [guest, member, uploader]) for (const t of ['Page', 'Img', 'Big', 'BDl', 'Thb', 'Zip']) assert.equal((await request(c, '?t=' + t + '&f=' + q(run + '/Public/first.jpg'))).status, 403);
       for (const j of ['Inf', 'Pan', 'Pag']) assert.equal((await request(guest, '?j=' + j + '&f=' + q(run + '/Public/first.jpg'))).status, 403);
       assert(!(await request(guest, '?t=Rss')).body.includes(run + '/Public'));
+      assert.equal((await request(uploader, '?a=Upl', { path: run, newdir: 'Public', inherit: '1' })).status, 403);
+      assert.equal((await request(member, '?t=Com&f=' + q(run + '/Public/first.jpg'), { content: 'Denied comment', login: fixtures.accounts.member.username })).status, 403);
+      assert(!(await request(admin, '?f=' + q(run + '/Public/first.jpg'))).body.includes('Denied comment'));
     });
     await check('moving private album preserves ACL and cached-photo privacy', async () => {
       const r = await request(admin, '?a=Mov', { pathFrom: run + '/Public', pathTo: run + '/Destination', move: 'directory' });
@@ -147,7 +185,8 @@ if (!directory || directory.includes('/git/')) throw Error('Private output direc
     await check('rename preserves private ACL and comments', async () => {
       assert.equal((await request(admin, '?a=Mov', { pathFrom: run + '/Destination/Public', pathTo: 'Renamed', move: 'rename' })).status, 200);
       assert.equal((await request(guest, '?t=Big&f=' + q(run + '/Destination/Renamed/first.jpg'))).status, 403);
-      assert((await request(admin, '?f=' + q(run + '/Destination/Renamed/first.jpg'))).body.includes('český komentář'));
+      await go('?f=' + q(run + '/Destination/Renamed/first.jpg'));
+      assert((await page.locator('#comments').innerText()).includes('český komentář'));
     });
     await check('guest share token grants only its album and revokes existing sessions', async () => {
       await request(admin, '?t=Pri&f=' + q(run + '/Private'), {});
@@ -168,11 +207,24 @@ if (!directory || directory.includes('/git/')) throw Error('Private output direc
       try { assert.equal((await request(member, '?t=Acc')).status, 403); }
       finally { await request(admin, '?t=Adm&a=Acc', { edit: '1', login: original.username, password: original.password, name: '', email: '', language: '' }); }
     });
+    await check('account deletion and recreation cannot resurrect old sessions', async () => {
+      await login(member, fixtures.accounts.member);
+      const second = await create(); await login(second, fixtures.accounts.member);
+      assert.equal((await request(admin, '?t=Adm&a=ADe', { name: fixtures.accounts.member.username })).status, 200);
+      assert.equal((await request(member, '?t=Acc')).status, 403);
+      assert.equal((await request(admin, '?t=Adm&a=AAc', { login: fixtures.accounts.member.username, password: fixtures.accounts.member.password, verif: fixtures.accounts.member.password })).status, 200);
+      assert.equal((await request(second, '?t=Acc')).status, 403);
+      await login(member, fixtures.accounts.member);
+      assert.equal((await request(member, '?t=Acc')).status, 200);
+    });
+    await check('unsafe global settings are rejected without changing them', async () => {
+      for (const values of [{ name: 'Audit\nInjected=1' }, { name: 'Audit', user_theme: '../../' }, { name: 'Audit', loc: '../../' }, { name: 'Audit', thumbs_size: '999999999' }, { name: 'Audit', encode_video: 'on' }]) assert.equal((await request(admin, '?t=Adm&a=Set', values)).status, 400);
+    });
     await check('browser has no JavaScript errors', async () => assert.deepEqual(errors, []));
     await check('browser logout removes privileged access', async () => {
       await go('?f=' + q(run));
       await page.locator('a[href="#menuright"]').click();
-      await page.locator('#menuright').getByText(fixtures.accounts.admin.username, { exact: false }).hover();
+      await page.locator('#menuright').getByText(fixtures.accounts.admin.username, { exact: false }).click();
       await page.locator('a[href="?t=Logout"]').click();
       assert.equal((await request(admin, '?t=Adm')).status, 403);
     });

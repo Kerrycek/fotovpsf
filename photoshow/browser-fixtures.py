@@ -4,7 +4,9 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import secrets
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -51,11 +53,44 @@ with (state / 'request.lock').open('a+') as lock:
             json.dump(data, stream)
     elif sys.argv[1] == 'cleanup':
         data = json.loads(receipt.read_text())
+        expected = sys.argv[2] if len(sys.argv) == 3 else ''
+        if not re.fullmatch('[0-9a-f]{64}', expected):
+            raise SystemExit('Cleanup requires the known synthetic image SHA256')
+        pattern = re.compile(re.escape(data['album']) + r'[0-9]{13}')
+        folders = [p for p in (state / 'photos').iterdir() if pattern.fullmatch(p.name)]
+        for folder in folders:
+            for file in folder.rglob('*'):
+                if file.is_symlink():
+                    raise SystemExit('Unexpected symlink: cleanup refused')
+                if file.is_file() and hashlib.sha256(file.read_bytes()).hexdigest() != expected:
+                    raise SystemExit('Unexpected photo content: cleanup refused')
         names = {a['username'] for a in data['accounts'].values()}
         for entry in list(root):
             if entry.findtext('login') in names:
                 root.remove(entry)
-        # Photo removal is deliberately separate: review its own fixture tree first.
+        for folder in folders:
+            shutil.rmtree(folder)
+            metadata = state / 'generated/Thumbs' / folder.name
+            if metadata.exists():
+                shutil.rmtree(metadata)
+        # Remove only receipt-owned fixture comments/shares, preserving real entries.
+        for filename, tag in [('comments.xml', 'path'), ('guest_tokens.xml', 'path')]:
+            target = state / 'generated/Conf' / filename
+            if not target.exists():
+                continue
+            metadata_tree = ET.parse(target)
+            for entry in list(metadata_tree.getroot()):
+                if pattern.fullmatch((entry.findtext(tag) or '').split('/')[0]):
+                    metadata_tree.getroot().remove(entry)
+            info = target.stat()
+            fd, temporary = tempfile.mkstemp(prefix='.browser-cleanup-', dir=target.parent)
+            try:
+                os.fchmod(fd, 0o600); os.fchown(fd, info.st_uid, info.st_gid)
+                with os.fdopen(fd, 'wb') as stream:
+                    metadata_tree.write(stream, encoding='utf-8', xml_declaration=True)
+                os.replace(temporary, target)
+            finally:
+                if os.path.exists(temporary): os.unlink(temporary)
     else:
         raise SystemExit('Use create or cleanup')
     fd, temporary = tempfile.mkstemp(prefix='.browser-fixtures-', dir=accounts.parent)
@@ -73,4 +108,4 @@ with (state / 'request.lock').open('a+') as lock:
         print(json.dumps(data))
     else:
         receipt.unlink()
-        print('Removed only receipt-owned browser fixture accounts')
+        print(f'Removed only receipt-owned browser fixtures ({len(folders)} albums)')

@@ -42,6 +42,22 @@ sources or Git.
   successful login refunds only its own reservation. IPv6 shares a /64 bucket.
 - State-changing requests take one exclusive write lock. XML is replaced
   atomically so readers cannot observe partially written credentials or ACLs.
+  Readers share that lock while serving a response; photo moves carry their
+  native ACL/comment metadata and preserve inherited rights at the destination.
+  Moving/deleting an album revokes its old share links rather than allowing
+  those links to expose a later album reusing the same path.
+- Sessions are bound to the current password verifier, with a 30-minute idle
+  timeout and 12-hour absolute lifetime. Changing a password or deleting and
+  recreating a username invalidates existing logins. New passwords require at
+  least 12 bytes. Existing passwords remain usable.
+- After deploying wrapper verification and taking a consistent checkpoint,
+  root may run `python3 photoshow/migrate-passwords.py` once. This replaces
+  stored bare SHA1 verifiers with salted Argon2id wrappers, preserving existing
+  passwords. Successful login replaces the wrapper with direct Argon2id.
+  Historical private checkpoints still contain historical verifiers.
+- Settings reject INI line injection, invalid theme/language paths and unbounded
+  thumbnail sizes. Shell process functions are disabled. This deployment accepts
+  JPEG/PNG/GIF photos; the obsolete shell-based video encoder is unavailable.
 - The browser uses pinned official jQuery 4.0.0 and Migrate 4.0.2. Unused jQuery
   UI and Blueimp upload libraries are removed, without changing the core CSS.
   The old scrolling helper no longer relies on the removed browser sniffing API.
@@ -138,6 +154,28 @@ role boundaries, traversal rejection, ZIP/RSS and admin pages. The content suite
 compares the original source manifest, every photo copy, HTTP originals,
 thumbnails and metadata. Its historical 476-photo baseline is a diagnostic;
 never remove/restore live user data merely because a count changes.
+
+`tests-browser.cjs` uses official Playwright in Chromium and WebKit, with separate
+browser contexts for admin/member/uploader/guest. It tests native forms and file
+choosers, multiple/duplicate uploads, downloads, keyboard navigation, fullscreen
+presentation, comments, responsive layouts, account/session revocation, direct
+private URLs and native ACL metadata through moves/renames. Its JSON reports and
+screenshots contain fixture details and must remain outside Git.
+
+Create test-only role accounts with `browser-fixtures.py create` on the named
+preview, capturing stdout directly into a private mode-0600
+`browser-audit-fixtures.json` on the Mac. Set `PHOTOSHOW_QA_PRIVATE` to that private
+directory, containing a synthetic `photoshow-upload-test.jpg`, then run:
+
+```sh
+NODE_PATH=/path/to/node_modules node photoshow/tests-browser.cjs
+PHOTOSHOW_QA_ENGINE=webkit NODE_PATH=/path/to/node_modules node photoshow/tests-browser.cjs
+```
+
+After inspecting results, run `browser-fixtures.py cleanup <synthetic-image-sha256>`
+on the preview. It removes only receipt-owned roles and timestamped fixture
+albums, refuses unexpected photo contents, and preserves unrelated XML entries.
+The helper refuses to create another receipt until the old run is cleaned up.
 
 The checkpoint script pauses only the preview, archives native photo/generated
 state (excluding sessions/logs), writes `SHA256SUMS`, verifies it and restores

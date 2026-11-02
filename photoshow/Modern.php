@@ -117,6 +117,10 @@ final class Modern
     public static function verifyPassword($plain, $stored): bool
     {
         if (!is_string($plain) || !is_string($stored) || $stored === '') return false;
+        if (str_starts_with($stored, 'legacy-sha1:')) {
+            $wrapped = substr($stored, strlen('legacy-sha1:'));
+            return password_verify(sha1($plain), $wrapped) || password_verify(sha1(addslashes($plain)), $wrapped);
+        }
         if (preg_match('/\A[0-9a-f]{40}\z/D', $stored)) return hash_equals($stored, sha1($plain)) || hash_equals($stored, sha1(addslashes($plain)));
         return password_verify($plain, $stored);
     }

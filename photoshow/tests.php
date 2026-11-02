@@ -31,6 +31,9 @@ try {
     check(Modern::verifyPassword($plain,sha1($plain)),'legacy SHA1 verify');
     check(!Modern::verifyPassword('wrong',sha1($plain)),'legacy wrong password');
     check(Modern::verifyPassword($plain,sha1(addslashes($plain))),'legacy magic-quotes password');
+    check(Modern::verifyPassword($plain,'legacy-sha1:'.Account::password(sha1($plain))),'wrapped legacy password');
+    check(Modern::verifyPassword($plain,'legacy-sha1:'.Account::password(sha1(addslashes($plain)))),'wrapped legacy magic quotes');
+    check(!Modern::verifyPassword('wrong','legacy-sha1:'.Account::password(sha1($plain))),'wrapped legacy wrong password');
     $account = new Account(); $account->login = 'Fixture'; $account->password = $hash;
     $identity = ['auth_fingerprint'=>hash('sha256', "Fixture\0".$hash), 'auth_started'=>1000, 'auth_seen'=>1000];
     $_SESSION = $identity;
@@ -77,6 +80,11 @@ try {
     check(!file_exists($root.'/metadata/.renamed.jpg_rights.xml'),'deleted file ACL cleaned');
     StateFiles::remove($root.'/sandbox/Destination');
     rmdir($root.'/sandbox'); rmdir($root.'/metadata');
+    CurrentUser::$accounts_file = $root.'/accounts.xml';
+    file_put_contents(CurrentUser::$accounts_file, '<accounts><account><login>Alice</login><password>fixture</password><name/><email/><language/><key/><groups><group>root</group></groups></account></accounts>');
+    Account::edit('Alice', null, null, null, null, []);
+    check((new Account('Alice'))->groups === [],'remove final group from capitalized account');
+    unlink(CurrentUser::$accounts_file);
     mkdir($root.'/gate',0700);
     $gate=new PhotoShowLoginGate($root.'/gate');
     for($i=0;$i<5;$i++) $gate->reserve('192.0.2.5', 1000);

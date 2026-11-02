@@ -133,7 +133,7 @@
  	}
  
  	/**
-@@ -275,7 +273,7 @@
+@@ -275,25 +273,27 @@
  	 * @param string $email
  	 * @author Thibaud Rohmer
  	 */
@@ -142,7 +142,14 @@
  		/// Only the admin can modify other accounts
  		if( !CurrentUser::$admin && $login != CurrentUser::$account->login ){
  			return;
-@@ -288,12 +286,13 @@
+ 		}
+ 
+-		if(isset($login) && (preg_match("/^[A-Z][a-zA-Z -]+$/", $login) === 0) ){
++		if (isset($login)) {
++            if (!is_string($login) || !Account::exists($login)) throw new InvalidArgumentException('Account not found');
+ 			$acc = new Account($login);
+ 		}else{
+ 			$acc = CurrentUser::$account;
  		}
  
  		/// Check password
@@ -158,7 +165,7 @@
  			$acc->password = Account::password($password);
  		}
  
-@@ -306,11 +305,12 @@
+@@ -306,11 +306,12 @@
  		}
  
  
@@ -173,7 +180,7 @@
  			$acc->groups = $groups;
  		}
  
-@@ -338,7 +338,7 @@
+@@ -338,7 +339,7 @@
              $i++;
  		}
  		
@@ -182,7 +189,7 @@
  	}
  
  	/**
-@@ -497,7 +497,7 @@
+@@ -497,7 +498,7 @@
  		/// Language
  		echo "<div class='pure-control-group'>
  					<label>".Settings::_("settings","language")."</label>
@@ -715,6 +722,15 @@
  			Group::create("root");
  			Group::create("uploaders");
  			Group::create("user");
+@@ -107,7 +107,7 @@
+ 	 * @author Thibaud Rohmer
+ 	 */
+ 	public static function create($name,$rights=array()){
+-		if(!isset($name)||strlen($name)<1){
++		if (!is_string($name) || !preg_match('/\A[\p{L}\p{N} _-]{1,80}\z/uD', $name)) {
+ 			return;
+ 		}
+ 		/// Check that groups file exists
 @@ -128,7 +128,7 @@
  		foreach($rights as $r)
  			$xml_right->addChild($r);
@@ -1370,6 +1386,58 @@
  				if($("#image_bar #stop").is(":visible")){
  					$("#image_bar #stop").click();
  				}
+--- a/src/js/slideshow.js
++++ b/src/js/slideshow.js
+@@ -35,30 +35,31 @@
+ 	$("#next a").click();
+ }
+ 
+-function toggleFullScreen() {
++function toggleFullScreen(enter) {
+   var doc = window.document;
+   var docEl = doc.getElementById("image_panel");
+ 
+   var requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+   var cancelFullScreen = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
+ 
+-  if(!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
+-    requestFullScreen.call(docEl);
+-  }
+-  else {
+-    cancelFullScreen.call(doc);
+-  }
++  var active = doc.fullscreenElement || doc.mozFullScreenElement || doc.webkitFullscreenElement || doc.msFullscreenElement;
++  var result;
++  if (enter && !active && requestFullScreen) result = requestFullScreen.call(docEl);
++  if (!enter && active && cancelFullScreen) result = cancelFullScreen.call(doc);
++  // CSS presentation remains usable when the browser denies native fullscreen.
++  if (result && result.catch) result.catch(function () {});
+ }
+ 
+ function start_slideshow(){	
+ 	slideshow_status = 1;
+-	timer = setInterval('run_slideshow()',7000);
++	clearInterval(timer);
++	timer = setInterval(run_slideshow,7000);
+ 	$(".image_panel").css("position","fixed");
+ 	$(".image_panel").css("z-index",5000);
+ 	$(".image_panel").animate({bottom:'0'},200);
+ 	hide_links();
+ 
+-	toggleFullScreen();
++	toggleFullScreen(true);
+ 
+ }
+ 
+@@ -90,7 +91,7 @@
+ 	$(".image_panel").css("position","absolute");
+ 	$(".image_panel").css("z-index",50);
+ 	show_links();
+-	toggleFullScreen();
++	toggleFullScreen(false);
+ }
+ 
+ function init_slideshow_panel(){
 --- a/src/phpthumb/GdThumb.inc.php
 +++ b/src/phpthumb/GdThumb.inc.php
 @@ -137,12 +137,12 @@
