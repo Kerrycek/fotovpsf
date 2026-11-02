@@ -121,7 +121,16 @@ php photoshow/tests.php /srv/photoshow-php85-app
 PHOTOSHOW_TEST_URL=https://foto.crucio.cz/kra/ python3 photoshow/tests-live.py
 PHOTOSHOW_TEST_URL=https://foto.crucio.cz/kra/ python3 photoshow/tests-content.py --copy-only
 python3 photoshow/backup-preview.py
+python3 photoshow/tests-public.py
 ```
+
+The public test spends the test VPS's own login-failure budget, verifies that
+spoofed forwarding headers cannot bypass it, waits for the real refill, and
+checks a successful login without deleting/resetting limiter state. Run it from
+the test VPS, not an operator's shared network.
+
+The service reports readiness only after its Nginx and PHP have served a page,
+so backup/restart completion does not precede the first usable HTTP response.
 
 The live suite creates and removes only its own synthetic accounts/albums. It
 checks native login, password migration, uploads, private/cached URLs, CSRF,

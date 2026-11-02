@@ -4,6 +4,8 @@ import subprocess
 import signal
 import time
 import os
+import socket
+import http.client
 
 root=pathlib.Path('/run/photoshow-preview')
 app=pathlib.Path(os.environ.get('PHOTOSHOW_APP','/srv/photoshow-php85-app')).resolve()
@@ -81,6 +83,26 @@ try:
         if php.poll() is not None:raise RuntimeError('FPM failed')
         time.sleep(.05)
     nginx=subprocess.Popen([str(tools/'bin/nginx'),'-e','stderr','-c',str(root/'nginx.conf'),'-p',str(root)]);processes.append(nginx)
+    # A successful systemctl start must mean both Nginx and PHP can serve a page.
+    deadline=time.monotonic()+20
+    ready=False
+    while time.monotonic()<deadline and not stopping:
+        if any(p.poll() is not None for p in processes):raise RuntimeError('Preview child exited before readiness')
+        connection=http.client.HTTPConnection('127.0.0.1',18085,timeout=1)
+        try:
+            connection.request('GET','/')
+            response=connection.getresponse();response.read()
+            if response.status in (200,403):ready=True;break
+        except OSError:pass
+        finally:connection.close()
+        time.sleep(.05)
+    if not ready and not stopping:raise RuntimeError('Preview did not become ready')
+    if ready and os.environ.get('NOTIFY_SOCKET'):
+        address=os.environ['NOTIFY_SOCKET']
+        if address.startswith('@'):address='\0'+address[1:]
+        with socket.socket(socket.AF_UNIX,socket.SOCK_DGRAM) as notification:
+            notification.sendto(b'READY=1',address)
+
     while all(p.poll() is None for p in processes):time.sleep(.5)
     if not stopping:raise RuntimeError('Preview child exited unexpectedly')
 finally:

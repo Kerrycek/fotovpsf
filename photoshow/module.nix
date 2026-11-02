@@ -89,6 +89,9 @@ in
         PHOTOSHOW_BASE_PATH = "${cfg.mountPath}/";
       };
       serviceConfig = {
+        Type = "notify";
+        NotifyAccess = "main";
+        TimeoutStartSec = "30s";
         ExecStart = "${pkgs.python3}/bin/python3 ${./run-preview.py}";
         DynamicUser = true;
         User = "photoshow-preview";
