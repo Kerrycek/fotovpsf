@@ -15,6 +15,7 @@
           vpsadminos.nixosModules.containerStable
           ./hosts/foto-test.nix
           ./nixos/gallery.nix
+          ./photoshow/module.nix
         ];
         specialArgs = { inherit inputs; };
       };

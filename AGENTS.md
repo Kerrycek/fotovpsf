@@ -3,6 +3,9 @@
 - The user authorized porting the original PhotoShow to current PHP on
   `root@172.16.9.28` on 2026-11-01. Work in an isolated preview with copied
   state; preserve the original installation and unrelated hosted websites.
+- User authorized publishing the PhotoShow copy at foto.crucio.cz/kra on
+  2026-11-02, with the original appearance/order. Host it alongside Piwigo
+  on the test VPS; this does not authorize a foto.vpsfree.cz cutover.
 - Keep Piwigo on `root@37.205.8.218` available for comparison. Do not change
   the production proxy or switch the production domain without instruction.
 - Store photographs, source archives, account data, hashes, credentials,

@@ -7,6 +7,8 @@ import os
 
 root=pathlib.Path('/run/photoshow-preview')
 app=pathlib.Path(os.environ.get('PHOTOSHOW_APP','/srv/photoshow-php85-app')).resolve()
+public_url=os.environ.get('PHOTOSHOW_PUBLIC_URL', '')
+base_path=os.environ.get('PHOTOSHOW_BASE_PATH', '/')
 tools=pathlib.Path(os.environ.get('PHOTOSHOW_TOOLS','/srv/photoshow-php85-tools')).resolve()
 (root/'fpm.conf').write_text(f'''[global]
 error_log=/var/lib/photoshow-preview/error.log
@@ -21,6 +23,8 @@ pm.max_requests=200
 request_terminate_timeout=60s
 catch_workers_output=yes
 clear_env=yes
+env[PHOTOSHOW_PUBLIC_URL]={public_url}
+env[PHOTOSHOW_BASE_PATH]={base_path}
 php_admin_value[session.save_path]=/var/lib/photoshow-preview/sessions
 php_admin_flag[display_errors]=off
 php_admin_flag[log_errors]=on
@@ -43,12 +47,15 @@ http {
     listen 127.0.0.1:18085;
     server_name localhost;
     root APP;
+    set_real_ip_from 127.0.0.1;
+    real_ip_header X-Real-IP;
     add_header X-Content-Type-Options nosniff always;
     location = / { rewrite ^ /index.php last; }
     location = /index.php {
       include TOOLS/conf/fastcgi_params;
       fastcgi_param SCRIPT_FILENAME APP/index.php;
       fastcgi_param SERVER_NAME localhost;
+      fastcgi_param HTTPS EXTERNAL_HTTPS;
       fastcgi_pass unix:/run/photoshow-preview/php.sock;
       fastcgi_read_timeout 70s;
       fastcgi_hide_header X-Powered-By;
@@ -57,7 +64,7 @@ http {
     location / { return 404; }
   }
 }
-'''.replace('TOOLS',str(tools)).replace('APP',str(app)))
+'''.replace('TOOLS',str(tools)).replace('APP',str(app)).replace('EXTERNAL_HTTPS', 'on' if public_url.startswith('https://') else 'off'))
 processes=[]
 stopping=False
 def stop(*_):
@@ -73,7 +80,7 @@ try:
         if (root/'php.sock').exists():break
         if php.poll() is not None:raise RuntimeError('FPM failed')
         time.sleep(.05)
-    nginx=subprocess.Popen([str(tools/'bin/nginx'),'-c',str(root/'nginx.conf'),'-p',str(root)]);processes.append(nginx)
+    nginx=subprocess.Popen([str(tools/'bin/nginx'),'-e','stderr','-c',str(root/'nginx.conf'),'-p',str(root)]);processes.append(nginx)
     while all(p.poll() is None for p in processes):time.sleep(.5)
     if not stopping:raise RuntimeError('Preview child exited unexpectedly')
 finally:

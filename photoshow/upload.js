@@ -1,27 +1,34 @@
-/* Native multiple-file upload; retains the original PHP handler and CSRF form. */
+/* Original dropzone appearance with native file selection and protected POST. */
 function init_dropzone() {
     document.querySelectorAll('form.dropzone').forEach(function (form) {
         var input = form.querySelector('input[type="file"]');
-        if (!input) return;
-        if (form.dataset.nativeUploadReady) return;
+        if (!input || form.dataset.nativeUploadReady) return;
         form.dataset.nativeUploadReady = '1';
-        input.accept = 'image/jpeg,image/png,image/gif';
-        input.setAttribute('aria-label', 'Fotografie k nahrání');
-        var choose = document.createElement('button');
-        choose.type = 'button'; choose.textContent = 'Vybrat fotografie';
-        choose.addEventListener('click', function () { input.click(); });
-        var selection = document.createElement('p');
-        selection.className = 'upload-selection'; selection.setAttribute('aria-live', 'polite');
-        input.parentNode.insertBefore(choose, input);
-        input.parentNode.insertBefore(selection, input.nextSibling);
-        input.style.display = 'none';
-        input.addEventListener('change', function () { selection.textContent = 'Vybrané soubory: ' + input.files.length; });
-        var submit = form.querySelector('button:not([type=button])');
-        if (submit) submit.textContent = 'Nahrát fotografie';
+        var submit = form.querySelector('button');
         var hint = form.querySelector('div:last-child');
-        if (hint) hint.textContent = 'Můžeš vybrat více fotografií najednou. JPEG, PNG nebo GIF; dohromady nejvýše 64 MB.';
+        var choose = document.createElement('button');
+        choose.type = 'button'; choose.className = 'file_upload';
+        choose.textContent = hint ? hint.textContent : 'Upload images here';
+        choose.addEventListener('click', function () { input.click(); });
+        input.accept = 'image/jpeg,image/png,image/gif';
+        input.setAttribute('aria-label', 'Photographs');
+        form.insertBefore(choose, input);
+        input.style.display = 'none';
+        if (submit) submit.style.display = 'none';
+        if (hint) hint.style.display = 'none';
+        function upload() {
+            if (!input.files.length) return;
+            choose.disabled = true; choose.textContent = 'Uploading…';
+            form.requestSubmit(submit);
+        }
+        input.addEventListener('change', upload);
+        choose.addEventListener('dragover', function (event) { event.preventDefault(); choose.classList.add('file_upload_highlight'); });
+        choose.addEventListener('dragleave', function () { choose.classList.remove('file_upload_highlight'); });
+        choose.addEventListener('drop', function (event) {
+            event.preventDefault(); choose.classList.remove('file_upload_highlight');
+            input.files = event.dataTransfer.files; upload();
+        });
     });
 }
-
-document.addEventListener("DOMContentLoaded", init_dropzone);
+document.addEventListener('DOMContentLoaded', init_dropzone);
 if (window.jQuery) jQuery(document).ajaxComplete(init_dropzone);

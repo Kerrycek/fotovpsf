@@ -4,6 +4,10 @@ final class Modern
 {
     public static function bootstrap(): void
     {
+        require_once dirname(__DIR__).'/security/login-gate.php';
+        $path = getenv('PHOTOSHOW_BASE_PATH') ?: '/';
+        if (!preg_match('#^/(?:[a-zA-Z0-9_-]+/)*$#D', $path)) throw new RuntimeException('Invalid cookie path');
+        session_set_cookie_params(['path'=>$path, 'secure'=>str_starts_with(getenv('PHOTOSHOW_PUBLIC_URL') ?: '', 'https://'), 'httponly'=>true, 'samesite'=>'Lax']);
         session_name('photoshow85');
         session_start();
         $_SESSION['csrf'] ??= bin2hex(random_bytes(32));
@@ -27,6 +31,13 @@ final class Modern
                 http_response_code(403); exit('Platnost formuláře vypršela. Obnovte stránku.');
             }
         }
+        if ($post) {
+            self::$writeLock = fopen('/var/lib/photoshow-preview/request.lock', 'c');
+            if (!self::$writeLock || !flock(self::$writeLock, LOCK_EX)) {
+                http_response_code(503); header('Retry-After: 3'); exit('Zkuste požadavek za chvíli.');
+            }
+            chmod('/var/lib/photoshow-preview/request.lock', 0600);
+        }
         ob_start(static function(string $body): string {
             foreach (headers_list() as $header) {
                 if (stripos($header, 'Content-Type:') === 0 && stripos($header, 'text/html') === false) return $body;
@@ -35,6 +46,29 @@ final class Modern
             $body = preg_replace('/(<form\b[^>]*>)/i', '$1<input type="hidden" name="csrf" value="'.$token.'">', $body);
             return str_replace('</head>', '<meta name="photoshow-csrf" content="'.$token.'"></head>', $body);
         });
+    }
+
+    private static $writeLock;
+
+    /** Serialize state mutations, then replace XML atomically for concurrent readers. */
+    public static function saveXml(SimpleXMLElement $xml, string $target): bool
+    {
+        $temporary = tempnam(dirname($target), '.photoshow-xml-');
+        if ($temporary === false) throw new RuntimeException('XML storage unavailable');
+        try {
+            $bytes = $xml->asXML();
+            if ($bytes === false || file_put_contents($temporary, $bytes, LOCK_EX) !== strlen($bytes)) throw new RuntimeException('XML save failed');
+            chmod($temporary, 0600);
+            if (!rename($temporary, $target)) throw new RuntimeException('XML replacement failed');
+            return true;
+        } finally { if (file_exists($temporary)) unlink($temporary); }
+    }
+
+    public static function loginGate(): PhotoShowLoginGate
+    {
+        $directory = '/var/lib/photoshow-preview/auth-throttle';
+        if (!is_dir($directory) && !mkdir($directory, 0700, true) && !is_dir($directory)) throw new RuntimeException('Login state unavailable');
+        return new PhotoShowLoginGate($directory);
     }
 
     public static function authorizeActions(): void
@@ -47,7 +81,7 @@ final class Modern
             || in_array($action, ['Mov','Del','GDe','GEd','GC','AAc','AGA','AGR','ADe','CDe','GAl','DTk','Set','Acc'], true);
         if (($adminOnly && !CurrentUser::$admin)
             || ($action === 'Upl' && !CurrentUser::$admin && !CurrentUser::$uploader)
-            || ($type === 'Acc' && !isset(CurrentUser::$account))) {
+            || (in_array($type, ['Acc','Com'], true) && !isset(CurrentUser::$account))) {
             http_response_code(403); exit('K této akci nemáte oprávnění.');
         }
     }
@@ -92,24 +126,7 @@ final class Modern
             && $info[0] > 0 && $info[1] > 0 && $info[0] * $info[1] <= 50000000;
     }
 
-    /** Visible photo albums on the home page, retaining the original directory tree. */
-    public static function rootAlbums(string $root): array
-    {
-        $albums = [];
-        foreach (Menu::list_dirs($root, true) as $directory) {
-            if (!Judge::view($directory)) continue;
-            $latest = 0;
-            foreach (Menu::list_files($directory) as $file) {
-                if (Judge::view($file)) $latest = max($latest, filemtime($file));
-            }
-            $relative = File::a2r($directory);
-            if (!$latest && (!CurrentUser::$admin || Menu::list_dirs($directory))) continue;
-            $year = preg_match('/^(20[0-9]{2})(?:\/|$)/', $relative, $match) ? (int)$match[1] : (int)date('Y', $latest ?: time());
-            $albums[] = [$directory, $year, $latest];
-        }
-        usort($albums, static fn($a, $b) => [$b[1], $b[2], $b[0]] <=> [$a[1], $a[2], $a[0]]);
-        return array_column($albums, 0);
-    }
+    public static function rootName(): string { return 'fotky_galerie'; }
 
     public static function fail(Throwable $exception): void
     {

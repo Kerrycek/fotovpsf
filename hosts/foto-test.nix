@@ -16,6 +16,11 @@
     };
   };
   systemd.settings.Manager.DefaultTimeoutStartSec = "900s";
+  services.vpsfreePhotoShowPreview = {
+    enable = true;
+    virtualHost = "foto.crucio.cz";
+    mountPath = "/kra";
+  };
   services.vpsfreeGallery = {
     enable = true;
     hostName = "foto.crucio.cz";

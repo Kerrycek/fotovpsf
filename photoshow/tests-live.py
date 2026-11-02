@@ -14,7 +14,8 @@ import os
 
 state=pathlib.Path('/var/lib/photoshow-preview')
 php='/srv/photoshow-php85-tools/bin/php'
-base='http://127.0.0.1:18085/'
+base=os.environ.get('PHOTOSHOW_TEST_URL','http://127.0.0.1:18085/')
+if base not in ['http://127.0.0.1:18085/','https://foto.crucio.cz/kra/']: raise SystemExit('Only the named preview URL is allowed')
 accounts=state/'generated/Conf/accounts.xml'
 if os.geteuid()!=0 or not state.is_dir(): raise SystemExit('Isolated preview root required')
 checks=0

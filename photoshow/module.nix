@@ -10,8 +10,45 @@ let
   tools = import ./tools.nix { inherit pkgs; };
 in
 {
-  options.services.vpsfreePhotoShowPreview.enable = lib.mkEnableOption "isolated PhotoShow preview on 127.0.0.1:18085";
+  options.services.vpsfreePhotoShowPreview = {
+    enable = lib.mkEnableOption "isolated PhotoShow on PHP 8.5";
+    virtualHost = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = "Existing TLS virtual host to mount the gallery on; null keeps loopback-only access.";
+    };
+    mountPath = lib.mkOption {
+      type = lib.types.strMatching "/[a-zA-Z0-9_-]+";
+      default = "/kra";
+      description = "Public path without trailing slash. Cookies and canonical URLs are scoped here; existing native gallery paths are retained.";
+    };
+  };
   config = lib.mkIf cfg.enable {
+    assertions = [
+      {
+        assertion =
+          cfg.virtualHost == null || config.services.nginx.virtualHosts.${cfg.virtualHost}.forceSSL;
+        message = "Public PhotoShow requires an existing TLS virtual host.";
+      }
+    ];
+    services.nginx.virtualHosts = lib.mkIf (cfg.virtualHost != null) {
+      ${cfg.virtualHost}.locations = {
+        "= ${cfg.mountPath}".extraConfig = "return 308 ${cfg.mountPath}/$is_args$args;";
+        "^~ ${cfg.mountPath}/" = {
+          proxyPass = "http://127.0.0.1:18085/";
+          extraConfig = ''
+            client_max_body_size 64m;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto https;
+            proxy_set_header X-Forwarded-For $remote_addr;
+            proxy_read_timeout 90s;
+            proxy_redirect off;
+          '';
+        };
+      };
+    };
+    systemd.tmpfiles.rules = [ "e /var/lib/photoshow-preview/auth-throttle - - - 1d" ];
     # Seed a separate state copy before enabling. This never mounts the old web tree.
     systemd.services.photoshow-preview = {
       description = "Original PhotoShow on PHP 8.5 (isolated local preview)";
@@ -20,6 +57,10 @@ in
       environment = {
         PHOTOSHOW_APP = "${app}";
         PHOTOSHOW_TOOLS = "${tools}";
+      }
+      // lib.optionalAttrs (cfg.virtualHost != null) {
+        PHOTOSHOW_PUBLIC_URL = "https://${cfg.virtualHost}${cfg.mountPath}/";
+        PHOTOSHOW_BASE_PATH = "${cfg.mountPath}/";
       };
       serviceConfig = {
         ExecStart = "${pkgs.python3}/bin/python3 ${./run-preview.py}";

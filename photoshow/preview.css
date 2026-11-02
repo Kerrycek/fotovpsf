@@ -1,7 +1,5 @@
-/* Preserve the original layout; bound upload controls to the narrow side panel. */
-form.dropzone { display:flex; flex-direction:column; gap:12px; margin:12px 0 20px; padding:12px; box-sizing:border-box; background:#fff; border:1px solid #c9d0d8; border-radius:4px; }
-form.dropzone input[type=file] { position:static; display:block; width:100%; max-width:100%; height:auto; min-height:36px; margin:0; opacity:1; transform:none; font-size:13px; }
-form.dropzone button { padding:10px 12px; background:#1f3959; color:white; border:0; border-radius:3px; cursor:pointer; font:inherit; }
-form.dropzone button:hover, form.dropzone button:focus-visible { background:#16273f; outline:2px solid #f6914b; outline-offset:2px; }
-form.dropzone div { font-size:12px; line-height:1.5; color:#435268; }
-#menuright .pure-control-group input, #menuright textarea { max-width:100%; box-sizing:border-box; }
+/* The original PhotoShow dropzone, without an oversized invisible file input. */
+form.dropzone { margin:auto; }
+form.dropzone .file_upload { display:block; box-sizing:border-box; width:100%; position:relative; overflow:hidden; cursor:pointer; border:2px dashed white; border-radius:7px; margin:auto; background:#888; color:white; box-shadow:inset 0 0 6px black; text-shadow:1px 1px 2px black; height:50px; text-align:center; line-height:normal; font:inherit; }
+form.dropzone .file_upload_highlight, form.dropzone .file_upload:hover { background:#333; }
+form.dropzone .file_upload:focus-visible { outline:2px solid #f6914b; outline-offset:2px; }

@@ -2,6 +2,7 @@
 /** Regression checks against the packaged application, using synthetic fixtures. */
 $app = $argv[1];
 require $app.'/src/classes/Modern.php';
+require $app.'/src/security/login-gate.php';
 spl_autoload_register(static function($class) use ($app) {
     $path=$app.'/src/classes/'.$class.'.php';
     if(is_file($path)) require_once $path;
@@ -18,8 +19,8 @@ $root=sys_get_temp_dir().'/photoshow-test-'.bin2hex(random_bytes(8));
 mkdir($root,0700);mkdir($root.'/photos');mkdir($root.'/elsewhere');symlink($root.'/elsewhere',$root.'/photos/escape');
 try {
     $photos=$root.'/photos';
-    check(Modern::resolvePath('',$photos)===$photos.'/', 'root');
-    check(Modern::resolvePath('Album/nová fotka.jpg',$photos)===$photos.'/Album/nová fotka.jpg','new file');
+    check(Modern::resolvePath('',$photos)===realpath($photos).'/', 'root');
+    check(Modern::resolvePath('Album/nová fotka.jpg',$photos)===realpath($photos).'/Album/nová fotka.jpg','new file');
     foreach(['../secret','Album/../../secret','/etc/passwd',"test\0.jpg",'escape/image.jpg'] as $bad) rejects(fn()=>Modern::resolvePath($bad,$photos),'path rejected');
     foreach(['.hidden','..','a/b.jpg',"a\\b.jpg"] as $bad) rejects(fn()=>Modern::validateName($bad),'filename rejected');
     $plain="Dlouhé heslo: ' \\ 🐷 ".str_repeat('x',90);
@@ -38,6 +39,18 @@ try {
     require_once $app.'/src/phpthumb/ThumbLib.inc.php';
     $thumb=PhpThumbFactory::create($root.'/valid.jpg');$thumb->adaptiveResize(32,32);$thumb->save($root.'/thumb.jpg');
     check(array_slice(getimagesize($root.'/thumb.jpg'),0,2)===[32,32],'fresh GD thumbnail');
+    mkdir($root.'/gate',0700);
+    $gate=new PhotoShowLoginGate($root.'/gate');
+    for($i=0;$i<5;$i++) $gate->reserve('192.0.2.5', 1000);
+    try { $gate->reserve('192.0.2.5',1000); check(false,'failure budget'); }
+    catch(PhotoShowLoginLimited $e) { check($e->retryAfter===30,'failure budget'); }
+    $gate->reserve('192.0.2.5',1030); $gate->refund('192.0.2.5',1030);
+    check(true,'refill/refund');
+    $xml=new SimpleXMLElement('<test><value>retained</value></test>');
+    Modern::saveXml($xml,$root.'/state.xml');
+    check((string)simplexml_load_file($root.'/state.xml')->value==='retained','atomic XML');
+    check((fileperms($root.'/state.xml')&0777)===0600,'XML mode');
+    foreach(glob($root.'/gate/*') as $file) unlink($file);rmdir($root.'/gate');
     echo "PASS $checks checks\n";
 } finally {
     unlink($root.'/photos/escape');rmdir($root.'/photos');rmdir($root.'/elsewhere');

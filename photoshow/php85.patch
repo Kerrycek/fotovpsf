@@ -1,4 +1,10 @@
---- a/index.php
+--- a/inc/jquery.scrollTo.js
++++ b/inc/jquery.scrollTo.js
+@@ -8,4 +8,4 @@
+  *
+  * http://flesler.blogspot.com/2007/10/jqueryscrollto.html
+  */
+-;(function(d){var k=d.scrollTo=function(a,i,e){d(window).scrollTo(a,i,e)};k.defaults={axis:'xy',duration:parseFloat(d.fn.jquery)>=1.3?0:1};k.window=function(a){return d(window)._scrollable()};d.fn._scrollable=function(){return this.map(function(){var a=this,i=!a.nodeName||d.inArray(a.nodeName.toLowerCase(),['iframe','#document','html','body'])!=-1;if(!i)return a;var e=(a.contentWindow||a).document||a.ownerDocument||a;return d.browser.safari||e.compatMode=='BackCompat'?e.body:e.documentElement})};d.fn.scrollTo=function(n,j,b){if(typeof j=='object'){b=j;j=0}if(typeof b=='function')b={onAfter:b};if(n=='max')n=9e9;b=d.extend({},k.defaults,b);j=j||b.speed||b.duration;b.queue=b.queue&&b.axis.length>1;if(b.queue)j/=2;b.offset=p(b.offset);b.over=p(b.over);return this._scrollable().each(function(){var q=this,r=d(q),f=n,s,g={},u=r.is('html,body');switch(typeof f){case'number':case'string':if(/^([+-]=)?\d+(\.\d+)?(px|%)?$/.test(f)){f=p(f);break}f=d(f,this);case'object':if(f.is||f.style)s=(f=d(f)).offset()}d.each(b.axis.split(''),function(a,i){var e=i=='x'?'Left':'Top',h=e.toLowerCase(),c='scroll'+e,l=q[c],m=k.max(q,i);if(s){g[c]=s[h]+(u?0:l-r.offset()[h]);if(b.margin){g[c]-=parseInt(f.css('margin'+e))||0;g[c]-=parseInt(f.css('border'+e+'Width'))||0}g[c]+=b.offset[h]||0;if(b.over[h])g[c]+=f[i=='x'?'width':'height']()*b.over[h]}else{var o=f[h];g[c]=o.slice&&o.slice(-1)=='%'?parseFloat(o)/100*m:o}if(/^\d+$/.test(g[c]))g[c]=g[c]<=0?0:Math.min(g[c],m);if(!a&&b.queue){if(l!=g[c])t(b.onAfterFirst);delete g[c]}});t(b.onAfter);function t(a){r.animate(g,j,b.easing,a&&function(){a.call(this,n,b)})}}).end()};k.max=function(a,i){var e=i=='x'?'Width':'Height',h='scroll'+e;if(!d(a).is('html,body'))return a[h]-d(a)[e.toLowerCase()]();var c='client'+e,l=a.ownerDocument.documentElement,m=a.ownerDocument.body;return Math.max(l[h],m[h])-Math.min(l[c],m[c])};function p(a){return typeof a=='object'?a:{top:a,left:a}}})(jQuery);+;(function(d){var k=d.scrollTo=function(a,i,e){d(window).scrollTo(a,i,e)};k.defaults={axis:'xy',duration:parseFloat(d.fn.jquery)>=1.3?0:1};k.window=function(a){return d(window)._scrollable()};d.fn._scrollable=function(){return this.map(function(){var a=this,i=!a.nodeName||d.inArray(a.nodeName.toLowerCase(),['iframe','#document','html','body'])!=-1;if(!i)return a;var e=(a.contentWindow||a).document||a.ownerDocument||a;return e.compatMode=='BackCompat'?e.body:e.documentElement})};d.fn.scrollTo=function(n,j,b){if(typeof j=='object'){b=j;j=0}if(typeof b=='function')b={onAfter:b};if(n=='max')n=9e9;b=d.extend({},k.defaults,b);j=j||b.speed||b.duration;b.queue=b.queue&&b.axis.length>1;if(b.queue)j/=2;b.offset=p(b.offset);b.over=p(b.over);return this._scrollable().each(function(){var q=this,r=d(q),f=n,s,g={},u=r.is('html,body');switch(typeof f){case'number':case'string':if(/^([+-]=)?\d+(\.\d+)?(px|%)?$/.test(f)){f=p(f);break}f=d(f,this);case'object':if(f.is||f.style)s=(f=d(f)).offset()}d.each(b.axis.split(''),function(a,i){var e=i=='x'?'Left':'Top',h=e.toLowerCase(),c='scroll'+e,l=q[c],m=k.max(q,i);if(s){g[c]=s[h]+(u?0:l-r.offset()[h]);if(b.margin){g[c]-=parseInt(f.css('margin'+e))||0;g[c]-=parseInt(f.css('border'+e+'Width'))||0}g[c]+=b.offset[h]||0;if(b.over[h])g[c]+=f[i=='x'?'width':'height']()*b.over[h]}else{var o=f[h];g[c]=o.slice&&o.slice(-1)=='%'?parseFloat(o)/100*m:o}if(/^\d+$/.test(g[c]))g[c]=g[c]<=0?0:Math.min(g[c],m);if(!a&&b.queue){if(l!=g[c])t(b.onAfterFirst);delete g[c]}});t(b.onAfter);function t(a){r.animate(g,j,b.easing,a&&function(){a.call(this,n,b)})}}).end()};k.max=function(a,i){var e=i=='x'?'Width':'Height',h='scroll'+e;if(!d(a).is('html,body'))return a[h]-d(a)[e.toLowerCase()]();var c='client'+e,l=a.ownerDocument.documentElement,m=a.ownerDocument.body;return Math.max(l[h],m[h])-Math.min(l[c],m[c])};function p(a){return typeof a=='object'?a:{top:a,left:a}}})(jQuery);--- a/index.php
 +++ b/index.php
 @@ -30,11 +30,12 @@
   */
@@ -73,6 +79,15 @@
  	public $password;
  
  	/// Name of the user (optional)
+@@ -135,7 +135,7 @@
+ 
+ 			// Create accounts file
+ 			$xml	=	new SimpleXMLElement('<accounts></accounts>');
+-			$xml->asXML($xml_infos);
++			Modern::saveXml($xml, $xml_infos);
+ 			
+ 			// Set this account as root
+ 			$groups[] = "root";
 @@ -166,7 +166,7 @@
  	 * @author Thibaud Rohmer
  	 */
@@ -82,7 +97,7 @@
  	}
  		
  	/**
-@@ -176,9 +176,7 @@
+@@ -176,14 +176,12 @@
  	 * @author Thibaud Rohmer
  	 */
  	private function key(){
@@ -93,6 +108,21 @@
  	}
  
  
+ 	public function get_key(){
+-		if(!isset($this->key) || $this->key == ''){
++		if(false){ // Obsolete key authentication is disabled; GET must not write accounts.
+ 			$this->key = $this->key();
+ 			$this->save();
+ 		}
+@@ -262,7 +260,7 @@
+ 			$groups->addChild('group',$group);
+ 		}
+ 		// Saving into file
+-		$xml->asXML($xml_infos);
++		Modern::saveXml($xml, $xml_infos);
+ 	}
+ 
+ 	/**
 @@ -288,7 +286,7 @@
  		}
  
@@ -111,6 +141,15 @@
  			$acc->groups = $groups;
  		}
  
+@@ -338,7 +336,7 @@
+             $i++;
+ 		}
+ 		
+-		$xml->asXML($xml_infos);
++		Modern::saveXml($xml, $xml_infos);
+ 	}
+ 
+ 	/**
 @@ -497,7 +495,7 @@
  		/// Language
  		echo "<div class='pure-control-group'>
@@ -161,15 +200,17 @@
   			return;
   		}
  
-@@ -278,7 +279,7 @@
+@@ -278,8 +279,8 @@
  	 * @param string $dir
  	 * @author Thibaud Rohmer
  	 */
 -	public function rec_del($dir){
+- 		if($dir == Settings::$photos_dir){
 +	public static function rec_del($dir){
-  		if($dir == Settings::$photos_dir){
++ 		if(realpath($dir) === realpath(Settings::$photos_dir)){
   			return;
   		}
+ 
 --- a/src/classes/AdminAbout.php
 +++ b/src/classes/AdminAbout.php
 @@ -58,47 +58,11 @@
@@ -249,21 +290,24 @@
  
   		$allowedExtensions = array("tiff","jpg","jpeg","gif","png");
  		
-@@ -94,10 +94,11 @@
+@@ -94,10 +94,13 @@
   		}
  
   		/// Set upload path
 - 		$path = stripslashes(File::r2a($_POST['path']));
 + 		$path = stripslashes(File::r2a(($_POST['path'] ?? '')));
   		
-  		/// Create dir and update upload path if required
+- 		/// Create dir and update upload path if required
 - 		if(strlen(stripslashes($_POST['newdir']))>0 && !strpos(stripslashes($_POST['newdir']),'..')){
++         if (!Judge::view($path)) { http_response_code(403); return; }
++
++		/// Create dir and update upload path if required
 + 		if(strlen(stripslashes($_POST['newdir'] ?? ''))>0){
 +            Modern::validateName(stripslashes($_POST['newdir']));
  
   			$path = $path."/".stripslashes($_POST['newdir']);
   			if(!file_exists($path)){
-@@ -127,6 +128,8 @@
+@@ -127,6 +130,8 @@
  		
  				// Name on the website
  		        $name = $_FILES["images"]["name"][$key];
@@ -288,19 +332,10 @@
  		$this->header	=	new BoardHeader($this->title,$this->path);
  		$this->files	=	Menu::list_files($this->path);
 -		$this->dirs		=	Menu::list_dirs($this->path);
-+		$this->dirs = realpath($this->path) === realpath(Settings::$photos_dir) ? Modern::rootAlbums($this->path) : Menu::list_dirs($this->path);
++		$this->dirs = Menu::list_dirs($this->path);
  
          $pageURL = Settings::$site_address."/?f=".urlencode(File::a2r($this->path));
          
-@@ -184,7 +186,7 @@
- 			$this->boardfolders[] = $item;
- 
- 		}
--		if(Settings::$reverse_menu){
-+		if(Settings::$reverse_menu && realpath($this->path) !== realpath(Settings::$photos_dir)){
- 			$this->boardfolders = array_reverse($this->boardfolders);
- 		}
- 	}
 --- a/src/classes/BoardHeader.php
 +++ b/src/classes/BoardHeader.php
 @@ -61,7 +61,8 @@
@@ -309,7 +344,7 @@
  		$this->title 	=	is_dir(CurrentUser::$path)?basename(CurrentUser::$path):basename(dirname(CurrentUser::$path));
 -		$this->w 		= 	File::a2r(CurrentUser::$path);
 +		$this->w = File::a2r(CurrentUser::$path);
-+        if ($this->w === '') $this->title = 'Fotogalerie';
++        if ($this->w === '') $this->title = Modern::rootName();
  	}
  	
  	/**
@@ -335,6 +370,65 @@
  		}
  
  		/// Set absolute path to comments file
+@@ -110,6 +110,8 @@
+ 	 */
+ 	public static function add($file,$content,$login=""){
+ 		
++        if (!isset(CurrentUser::$account) || !is_string($content) || strlen($content) > 10000) return;
++        $login = CurrentUser::$account->login;
+ 		if($content == ""){
+ 			return;
+ 		}
+@@ -149,7 +151,7 @@
+ 		$xml		=	simplexml_load_file($c->commentsfile);
+ 		
+ 		unset($xml->comment[(int)$id]);
+-		$xml->asXML($c->commentsfile);
++		Modern::saveXml($xml, $c->commentsfile);
+ 	}
+ 
+ 	public function save(){
+@@ -159,16 +161,16 @@
+ 		/// Treat each of the comments
+ 		foreach ($this->comments as $comment){
+ 			$c = $xml->addChild("comment");
+-			$c->addChild("login"	, $comment->login);
++			$c->addChild("login"	, htmlspecialchars($comment->login, ENT_XML1, 'UTF-8'));
+ 			$c->addChild("date"		, $comment->date);
+-			$c->addChild("content"	, $comment->content);
++			$c->addChild("content"	, htmlspecialchars($comment->content, ENT_XML1, 'UTF-8'));
+ 		}
+ 
+ 		if(!file_exists(dirname($this->commentsfile))){
+ 			@mkdir(dirname($this->commentsfile),0750,true);
+ 		}
+ 		/// Write xml
+-		$xml->asXML($this->commentsfile);
++		Modern::saveXml($xml, $this->commentsfile);
+ 	}
+ 
+ 
+@@ -197,9 +199,9 @@
+ 		}
+ 
+ 		$c = $xml->addChild("comment");
+-		$c->addChild("login"	, $comment->login);
++		$c->addChild("login"	, htmlspecialchars($comment->login, ENT_XML1, 'UTF-8'));
+ 		$c->addChild("date"		, $comment->date);
+-		$c->addChild("content"	, $comment->content);
++		$c->addChild("content"	, htmlspecialchars($comment->content, ENT_XML1, 'UTF-8'));
+ 		$c->addChild("webfile"	, $this->webfile);
+ 		$c->addChild("path" 	, File::a2r($this->file));
+ 
+@@ -207,7 +209,7 @@
+ 			unset($xml->comment[0]);
+ 		}
+ 
+-		$xml->asXML($maincomm);
++		Modern::saveXml($xml, $maincomm);
+ 
+ 	}
+ 
 --- a/src/classes/CurrentUser.php
 +++ b/src/classes/CurrentUser.php
 @@ -91,7 +91,7 @@
@@ -363,7 +457,16 @@
  									unset($_POST['old_password']);
  									CurrentUser::init();
  									return;
-@@ -317,7 +318,12 @@
+@@ -314,10 +315,21 @@
+ 
+ 		CurrentUser::$admin	=	false;
+ 
++        $gate = Modern::loginGate();
++        $address = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
++        try { $gate->reserve($address); }
++        catch (PhotoShowLoginLimited $limited) {
++            http_response_code(429); header('Retry-After: '.$limited->retryAfter); exit('Příliš mnoho chybných přihlášení. Zkuste to za chvíli.');
++        }
  		$acc =	new Account($login);
  
  		// Check password
@@ -377,7 +480,15 @@
  			$_SESSION['login']		=	$login;
  			CurrentUser::$account	=	$acc;
              $_SESSION['token']      =   NULL;
-@@ -344,6 +350,8 @@
+@@ -332,6 +344,7 @@
+ 			CurrentUser::$uploader = true;
+ 		}
+ 
++        $gate->refund($address);
+ 		return true;
+ 	}
+ 
+@@ -344,6 +357,8 @@
  	 * @author Thibaud Rohmer
  	 */
  	public static function keyin($key){
@@ -446,8 +557,73 @@
  }
  
  ?>
+--- a/src/classes/Group.php
++++ b/src/classes/Group.php
+@@ -92,7 +92,7 @@
+ 	 */
+ 	public static function create_group_file(){
+ 			$xml=new SimpleXMLElement('<groups></groups>');
+-			$xml->asXML(CurrentUser::$groups_file);
++			Modern::saveXml($xml, CurrentUser::$groups_file);
+ 			Group::create("root");
+ 			Group::create("uploaders");
+ 			Group::create("user");
+@@ -128,7 +128,7 @@
+ 		foreach($rights as $r)
+ 			$xml_right->addChild($r);
+ 		
+-		$xml->asXML(CurrentUser::$groups_file);
++		Modern::saveXml($xml, CurrentUser::$groups_file);
+ 	}
+ 	
+ 	/**
+@@ -157,7 +157,7 @@
+ 			unset($xml->group[$i]);
+ 		}
+ 
+-		$xml->asXML($xml_infos);
++		Modern::saveXml($xml, $xml_infos);
+ 	}
+ 
+ 	/**
+@@ -178,7 +178,7 @@
+ 				foreach( $this->rights as $right )
+ 					$xml_rights->addChild('right',$right);
+ 		
+-				$xml->asXML(CurrentUser::$groups_file);
++				Modern::saveXml($xml, CurrentUser::$groups_file);
+ 				return;
+ 			}
+ 		}
 --- a/src/classes/GuestToken.php
 +++ b/src/classes/GuestToken.php
+@@ -84,7 +84,7 @@
+         if(!file_exists(CurrentUser::$tokens_file) || sizeof(self::findAll()) == 0 ){
+             // Create file
+             $xml	=	new SimpleXMLElement('<tokens></tokens>');
+-            $xml->asXML(CurrentUser::$tokens_file);
++            Modern::saveXml($xml, CurrentUser::$tokens_file);
+         }
+ 
+         // I like big keys
+@@ -120,7 +120,7 @@
+         $xml_token->addChild('path' ,$this->path);
+ 
+         // Saving into file
+-        $xml->asXML(CurrentUser::$tokens_file);
++        Modern::saveXml($xml, CurrentUser::$tokens_file);
+     }
+ 
+     /**
+@@ -149,7 +149,7 @@
+             $i++;
+         }
+ 
+-        if ($found && $xml->asXML(CurrentUser::$tokens_file)){
++        if ($found && Modern::saveXml($xml, CurrentUser::$tokens_file)){
+             return true;
+         } else {
+             return false;
 @@ -329,7 +329,7 @@
       * @author Franck Royer
       */
@@ -501,7 +677,7 @@
  
  		$this->path 	=	urlencode(File::a2r(CurrentUser::$path));
 -		$this->title 	=	basename(CurrentUser::$path);
-+		$this->title = File::a2r(CurrentUser::$path) === "" ? "Fotogalerie" : basename(CurrentUser::$path);
++		$this->title = File::a2r(CurrentUser::$path) === "" ? Modern::rootName() : basename(CurrentUser::$path);
  		$this->w 		= 	File::a2r(CurrentUser::$path);
  
  		if(is_file(CurrentUser::$path)){
@@ -525,6 +701,15 @@
  		}
  		$this->path =	File::r2a($rightsfile,Settings::$thumbs_dir);
  
+@@ -240,7 +240,7 @@
+ 			@mkdir(dirname($this->path),0750,true);
+ 		}
+ 		/// Save xml
+-		$xml->asXML($this->path);
++		Modern::saveXml($xml, $this->path);
+ 	}
+ 	
+ 	/**
 @@ -296,7 +296,7 @@
  		
  		if($rf == $rd) return true;
@@ -560,22 +745,9 @@
  
  		/// Set variables
 -		$this->title = basename($dir);
-+		$this->title = realpath($dir) === realpath(Settings::$photos_dir) ? "Alba" : basename($dir);
++		$this->title = realpath($dir) === realpath(Settings::$photos_dir) ? Modern::rootName() : basename($dir);
  		$this->webdir= urlencode(File::a2r($dir));
  		$this->path  = File::a2r($dir);
- 
-@@ -103,9 +105,9 @@
- 		}
- 
- 		/// Create Menu for each directory
--		$subdirs = $this->list_dirs($dir);
--
--		if(Settings::$reverse_menu){
-+		$subdirs = realpath($dir) === realpath(Settings::$photos_dir) ? Modern::rootAlbums($dir) : $this->list_dirs($dir);
-+
-+		if(Settings::$reverse_menu && realpath($dir) !== realpath(Settings::$photos_dir)){
- 			$subdirs = array_reverse($subdirs);
- 		}
  
 @@ -176,7 +178,7 @@
  		foreach ($dir_content as $content){
@@ -608,8 +780,9 @@
  
  			/// JS
 -			echo "<script src='inc/jquery.js'></script>\n";
-+			echo "<script src='inc/jquery.js'></script><script src='inc/modern.js'></script>\n";
- 			echo "<script src='inc/jquery-ui.js'></script>\n";
+-			echo "<script src='inc/jquery-ui.js'></script>\n";
++			echo "<script src='inc/jquery.js'></script><script src='inc/jquery-migrate.js'></script><script src='inc/modern.js'></script>\n";
++
  			echo "<script src='inc/mousewheel.js'></script>\n";
  			echo "<script src='inc/jquery.scrollTo.js'></script>\n";
 -			echo "<script src='inc/jquery.fileupload.js'></script>\n";
@@ -667,7 +840,7 @@
          if(!$large){
              try {
                  if ($is_video){
-@@ -297,7 +296,7 @@
+@@ -297,11 +296,11 @@
  				header("Pragma: public");
  				header("Cache-Control: max-age=360000");
  				header("Etag: $etag"); 
@@ -676,6 +849,11 @@
  				header('Expires: ' . gmdate('D, d M Y H:i:s', time()+$expires) . ' GMT');
  			}
  
+-	        header('Content-type: image/jpeg');
++	        header('Content-type: '.(getimagesize($path)['mime'] ?? 'image/jpeg'));
+             if(File::Type($path)=="Image"){
+             	readfile($path);
+             	return;
 @@ -324,61 +323,25 @@
  	 * @return void
  	 * @author Thibaud Rohmer
@@ -825,6 +1003,15 @@
                  Settings::$site_address = $admin_settings['site_address'];
              }else{
                  Settings::$site_address	= "http://".$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'];
+@@ -265,6 +265,8 @@
+ 				Settings::$ffmpeg_option	=	$admin_settings['ffmpeg_option'];
+ 			}
+ 		}
++
++        if (getenv('PHOTOSHOW_PUBLIC_URL')) Settings::$site_address = getenv('PHOTOSHOW_PUBLIC_URL');
+ 
+ 		// Localization files path
+ 		Settings::$locpath = dirname(dirname(dirname(__FILE__)))."/inc/loc/";
 --- a/src/classes/Video.php
 +++ b/src/classes/Video.php
 @@ -43,6 +43,8 @@
