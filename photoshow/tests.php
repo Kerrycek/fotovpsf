@@ -84,6 +84,7 @@ try {
     file_put_contents(CurrentUser::$accounts_file, '<accounts><account><login>Alice</login><password>fixture</password><name/><email/><language/><key/><groups><group>root</group></groups></account></accounts>');
     Account::edit('Alice', null, null, null, null, []);
     check((new Account('Alice'))->groups === [],'remove final group from capitalized account');
+    rejects(fn()=>Account::edit('Alice', null, '🐷🐷🐷🐷'), 'password length counts Unicode characters');
     unlink(CurrentUser::$accounts_file);
     mkdir($root.'/gate',0700);
     $gate=new PhotoShowLoginGate($root.'/gate');

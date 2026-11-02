@@ -49,7 +49,7 @@ sources or Git.
 - Sessions are bound to the current password verifier, with a 30-minute idle
   timeout and 12-hour absolute lifetime. Changing a password or deleting and
   recreating a username invalidates existing logins. New passwords require at
-  least 12 bytes. Existing passwords remain usable.
+  least 12 characters. Existing passwords remain usable.
 - After deploying wrapper verification and taking a consistent checkpoint,
   root may run `python3 photoshow/migrate-passwords.py` once. This replaces
   stored bare SHA1 verifiers with salted Argon2id wrappers, preserving existing

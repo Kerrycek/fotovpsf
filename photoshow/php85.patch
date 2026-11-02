@@ -94,7 +94,7 @@
  
  
 -		if( preg_match("/[^a-z0-9]/i", $login) || strlen($password) < 6){
-+		if (!is_string($login) || !preg_match('/\A[a-zA-Z0-9]{1,80}\z/D', $login) || !is_string($password) || strlen($password) < 12 || strlen($password) > 1024){
++		if (!is_string($login) || !preg_match('/\A[a-zA-Z0-9]{1,80}\z/D', $login) || !is_string($password) || (!mb_check_encoding($password, 'UTF-8') || mb_strlen($password, 'UTF-8') < 12) || strlen($password) > 1024){
  			return false;
  		}
  
@@ -161,7 +161,7 @@
  		/// Edit attributes
 -		if(isset($password) && strlen($password) > 4 ){
 +		if (isset($password) && $password !== '') {
-+            if (!is_string($password) || strlen($password) < 12 || strlen($password) > 1024) throw new InvalidArgumentException('Password must contain 12 to 1024 bytes');
++            if (!is_string($password) || (!mb_check_encoding($password, 'UTF-8') || mb_strlen($password, 'UTF-8') < 12) || strlen($password) > 1024) throw new InvalidArgumentException('Password must contain at least 12 characters and at most 1024 bytes');
  			$acc->password = Account::password($password);
  		}
  
