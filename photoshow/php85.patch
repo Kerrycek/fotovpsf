@@ -217,7 +217,7 @@
  									}
  									if(isset($_POST['login'])){
  										$this->page = new Account($_POST['login']);
-@@ -211,66 +212,29 @@
+@@ -211,66 +212,41 @@
   	public static function move(){
  
   		/// Just to be really sure... 
@@ -301,10 +301,22 @@
 +        return;
 +    }
 +
++
++    /** Native deletion dispatch; authorization and CSRF precede this method. */
++    public static function delete() {
++        if (!CurrentUser::$admin) return;
++        $paths = (array)($_POST['del'] ?? []);
++        $absolute = array_map(static fn($p) => File::r2a($p), $paths);
++        foreach ($absolute as $path) {
++            if (!file_exists($path) || realpath($path) === realpath(Settings::$photos_dir)) throw new InvalidArgumentException('Invalid deletion');
++        }
++        foreach ($absolute as $path) StateFiles::remove($path);
++    }
++
  
  	/**
  	 * Reccursively delete all files in $dir
-@@ -278,8 +242,8 @@
+@@ -278,8 +254,8 @@
  	 * @param string $dir
  	 * @author Thibaud Rohmer
  	 */
