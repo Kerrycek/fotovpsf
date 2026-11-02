@@ -48,7 +48,33 @@ in
         };
       };
     };
-    systemd.tmpfiles.rules = [ "e /var/lib/photoshow-preview/auth-throttle - - - 1d" ];
+    systemd.tmpfiles.rules = [
+      "e /var/lib/photoshow-preview/auth-throttle - - - 1d"
+      "d /var/backups/photoshow-port 0700 root root -"
+    ];
+    # Snapshot the native file/XML state independently of the Piwigo database.
+    systemd.services.photoshow-backup = {
+      description = "Consistent PhotoShow checkpoint with isolated restore verification";
+      path = [ pkgs.systemd ];
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = "${pkgs.python3}/bin/python3 ${./backup-preview.py}";
+        UMask = "0077";
+        NoNewPrivileges = true;
+        PrivateTmp = true;
+        ProtectSystem = "strict";
+        ProtectHome = true;
+        ReadWritePaths = [ "/var/backups/photoshow-port" ];
+      };
+    };
+    systemd.timers.photoshow-backup = {
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnCalendar = "*-*-* 03:35:00";
+        RandomizedDelaySec = "5m";
+        Persistent = true;
+      };
+    };
     # Seed a separate state copy before enabling. This never mounts the old web tree.
     systemd.services.photoshow-preview = {
       description = "Original PhotoShow on PHP 8.5 (isolated local preview)";

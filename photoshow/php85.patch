@@ -338,6 +338,15 @@
  
          $pageURL = Settings::$site_address."/?f=".urlencode(File::a2r($this->path));
          
+@@ -101,7 +103,7 @@
+         $this->page_header = "<meta property=\"og:url\" content=\"".$pageURL."\"/>\n"
+             ."<meta property=\"og:site_name\" content=\"".Settings::$name."\"/>\n"
+             ."<meta property=\"og:type\" content=\"article\"/>\n"
+-            ."<meta property=\"og:title\" content=\"".Settings::$name.": ".File::a2r($this->path)."\"/>\n";
++            ."<meta property=\"og:title\" content=\"".Settings::$name.": ".htmlentities(File::a2r($this->path), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')."\"/>\n";
+         if (Settings::$fbappid){
+             $this->page_header .= "<meta property=\"fb:app_id\" content=\"".Settings::$fbappid."\"/>\n";
+         }
 --- a/src/classes/BoardHeader.php
 +++ b/src/classes/BoardHeader.php
 @@ -61,7 +61,8 @@
@@ -646,6 +655,15 @@
  
      /// Header of the html page
      public $page_header;
+@@ -105,7 +107,7 @@
+         $this->page_header = "<meta property=\"og:url\" content=\"".$pageURL."\"/>\n"
+             ."<meta property=\"og:site_name\" content=\"".Settings::$name."\"/>\n"
+             ."<meta property=\"og:type\" content=\"website\"/>\n"
+-            ."<meta property=\"og:title\" content=\"".Settings::$name.": ".File::a2r($file)."\"/>\n"
++            ."<meta property=\"og:title\" content=\"".Settings::$name.": ".htmlentities(File::a2r($file), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')."\"/>\n"
+             ."<meta property=\"og:image\" content=\"".Settings::$site_address."/?t=Thb&f=".urlencode(File::a2r($file))."\"/>\n";
+         if (Settings::$fbappid){
+             $this->page_header .= "<meta property=\"fb:app_id\" content=\"".Settings::$fbappid."\"/>\n";
 --- a/src/classes/Index.php
 +++ b/src/classes/Index.php
 @@ -54,11 +54,20 @@

@@ -20,12 +20,13 @@ sources or Git.
   magic-quotes variant, are verified and upgraded on successful login. Existing
   account passwords are not reset. Legacy account-key login is disabled.
 - Existing album hierarchy, files and inherited access rules are retained.
-  The homepage and menu show photo albums directly, newest year first, without
-  presenting year-only containers as albums. Private content cannot determine
-  public album ordering or cover images.
+  The original homepage and year tree, ordering, colors, fonts and core styles
+  are retained. The logical root label remains `fotky_galerie` even though the
+  isolated data copy is stored under a different physical path.
 - The original upload endpoint accepts multiple genuine JPEG/PNG/GIF files,
   validates image type and dimensions, confines names/paths, and uses native
-  browser file selection instead of the obsolete Blueimp uploader. Maximum
+  browser file selection instead of the obsolete Blueimp uploader. The original
+  gray dropzone appearance and automatic upload after selection are retained. Maximum
   image size is 50 megapixels, 48 MiB per file and 64 MiB per request (including
   multipart overhead). Native POST/redirect/GET avoids resubmission on refresh.
 - Mutations require a session CSRF token and POST. Admin-only actions and
@@ -35,13 +36,36 @@ sources or Git.
 - ZIP downloads use PHP's ZipArchive instead of a shell command. RSS is rebuilt
   from currently public content so changing an album to private also removes
   it from the feed.
-- This compatibility preview is not approval to expose the old application to
-  the Internet. Before production, review remaining legacy browser libraries,
-  login throttling, account/XML write concurrency, TLS/proxy integration and
-  scheduled off-host backups. Piwigo's separate security audit does not certify
-  this PhotoShow port.
+- Public mounting uses the existing TLS host, a canonical HTTPS URL, a
+  path-scoped Secure/HttpOnly session and trusted edge-provided client addresses.
+  Five source-address failures are allowed, refilling one credit per 30 seconds;
+  successful login refunds only its own reservation. IPv6 shares a /64 bucket.
+- State-changing requests take one exclusive write lock. XML is replaced
+  atomically so readers cannot observe partially written credentials or ACLs.
+- The browser uses pinned official jQuery 4.0.0 and Migrate 4.0.2. Unused jQuery
+  UI and Blueimp upload libraries are removed, without changing the core CSS.
+  The old scrolling helper no longer relies on the removed browser sniffing API.
+- Before a production-domain cutover, review off-host backups, retention and
+  operator accounts. The separate Piwigo audit does not certify this application.
 
-## Isolated preview on the shared original host
+## Public mount beside Piwigo
+
+The deployed alternative is `https://foto.crucio.cz/kra/` on the test VPS. The
+module is enabled persistently in `hosts/foto-test.nix`; `/kra` redirects to
+`/kra/`, its assets/forms stay beneath that prefix, and the main Piwigo gallery
+continues to use `/`. Both applications keep separate state and sessions.
+
+`services.vpsfreePhotoShowPreview.virtualHost` selects an existing TLS virtual
+host and `mountPath` selects a path without a trailing slash. A null virtualHost
+keeps the original loopback-only mode. Seed the private native state copy before
+activating the module; no installer or import runs automatically.
+
+The daily `photoshow-backup.timer` runs at 03:35–03:40 Prague time, separately
+from Piwigo's database backup. It verifies an isolated restore and keeps all
+checkpoints. No retention deletion is configured. This server backup timer is
+unrelated to the cancelled work-monitor automation.
+
+## Optional loopback preview on the shared original host
 
 The preview listens only on `127.0.0.1:18085`, with its own Nginx, PHP-FPM,
 DynamicUser and `/var/lib/photoshow-preview` state. It cannot read the original
@@ -80,7 +104,9 @@ View from the operator's Mac through an SSH tunnel:
 ssh -N -L 127.0.0.1:18085:127.0.0.1:18085 root@172.16.9.28
 ```
 
-Then open `http://127.0.0.1:18085/`. Existing original accounts remain usable.
+Then open `http://127.0.0.1:18085/`. This older temporary preview is stopped once
+its state has been copied to `/kra`; do not restart it for concurrent edits.
+Existing original accounts remain usable in the copied gallery.
 An optional separate preview administrator can be created with
 `create-preview-admin.py`; its random credentials are saved root-only outside
 Git. The script never resets an existing account or changes original users.
@@ -92,8 +118,8 @@ preview. Run against the **preview only**, never an original/live website:
 
 ```sh
 php photoshow/tests.php /srv/photoshow-php85-app
-python3 photoshow/tests-live.py
-python3 photoshow/tests-content.py
+PHOTOSHOW_TEST_URL=https://foto.crucio.cz/kra/ python3 photoshow/tests-live.py
+PHOTOSHOW_TEST_URL=https://foto.crucio.cz/kra/ python3 photoshow/tests-content.py --copy-only
 python3 photoshow/backup-preview.py
 ```
 

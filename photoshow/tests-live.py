@@ -11,6 +11,8 @@ import xml.etree.ElementTree as ET
 import hashlib
 import shutil
 import os
+import fcntl
+import tempfile
 
 state=pathlib.Path('/var/lib/photoshow-preview')
 php='/srv/photoshow-php85-tools/bin/php'
@@ -42,16 +44,32 @@ class Client:
         check(before!=[c.value for c in self.jar if c.name=='photoshow85'],'session rotated')
         check(self.request('?t=Adm')[0]==(200 if user=='PortQAAdmin' else 403),'admin role boundary')
 
+created=set()
+def edit_accounts(callback):
+    with (state/'request.lock').open('a+') as lock:
+        owner=accounts.stat();os.fchown(lock.fileno(),owner.st_uid,owner.st_gid);os.fchmod(lock.fileno(),0o600)
+        fcntl.flock(lock,fcntl.LOCK_EX)
+        info=accounts.stat();tree=ET.parse(accounts)
+        callback(tree.getroot())
+        fd,name=tempfile.mkstemp(prefix='.qa-accounts-',dir=accounts.parent)
+        try:
+            os.fchmod(fd,0o600);os.fchown(fd,info.st_uid,info.st_gid)
+            with os.fdopen(fd,'wb') as stream:tree.write(stream,encoding='utf-8',xml_declaration=True)
+            os.replace(name,accounts)
+        finally:
+            if os.path.exists(name):os.unlink(name)
+
 def add_accounts():
-    tree=ET.parse(accounts);root=tree.getroot()
-    for name,groups in roles.items():
-        if any(a.findtext('login')==name for a in root):raise RuntimeError('Fixture identity already exists')
-        a=ET.SubElement(root,'account')
-        hashed=hashlib.sha1(password.encode()).hexdigest() if name=='PortQAAdmin' else subprocess.check_output([php,'-r',"echo password_hash(stream_get_contents(STDIN), PASSWORD_ARGON2ID);"],input=password.encode()).decode()
-        for field,value in {'login':name,'password':hashed,'name':'','email':'','language':'','key':''}.items():ET.SubElement(a,field).text=value
-        g=ET.SubElement(a,'groups')
-        for group in groups:ET.SubElement(g,'group').text=group
-    tree.write(accounts,encoding='utf-8',xml_declaration=True)
+    def add(root):
+        for name in roles:
+            if any(a.findtext('login')==name for a in root):raise RuntimeError('Fixture identity already exists')
+        for name,groups in roles.items():
+            a=ET.SubElement(root,'account')
+            hashed=hashlib.sha1(password.encode()).hexdigest() if name=='PortQAAdmin' else subprocess.check_output([php,'-r',"echo password_hash(stream_get_contents(STDIN), PASSWORD_ARGON2ID);"],input=password.encode()).decode()
+            for field,value in {'login':name,'password':hashed,'name':'','email':'','language':'','key':''}.items():ET.SubElement(a,field).text=value
+            g=ET.SubElement(a,'groups')
+            for group in groups:ET.SubElement(g,'group').text=group
+    edit_accounts(add);created.update(roles)
 
 password="QA ' \\ 🐷 "+secrets.token_urlsafe(64)
 roles={'PortQAAdmin':['user','root'],'PortQAUser':['user'],'PortQAUpload':['user','uploaders']}
@@ -71,6 +89,10 @@ try:
     check(admin.request('?a=Upl',{'path':'','newdir':album})[0]==403,'upload CSRF')
     check(admin.post('?a=Upl',{'path':'','newdir':album,'inherit':'1'})[0]==200,'create album')
     folder=state/'photos'/album;check(folder.is_dir(),'album exists')
+    status,metadata,_=admin.post('?a=Upl',{'path':album,'newdir':'quote"<x>','inherit':'1'})
+    og=re.search(rb'<meta property="og:title" content="([^"]*)"',metadata)
+    check(status==200 and og and b'quote&quot;&lt;x&gt;' in og[1],'album metadata escaped')
+
     # Real browser-compatible multipart upload through the native handler.
     image=subprocess.check_output([php,'-r','$im=imagecreatetruecolor(96,64); imagejpeg($im);'])
     def upload(client,name,content):
@@ -121,9 +143,10 @@ try:
     check((folder/'native.jpg').exists(),'uploader cannot delete another photo')
     print('PASS',checks,'live checks; native form/upload/privacy/CSRF/path confinement')
 finally:
-    tree=ET.parse(accounts);root=tree.getroot()
-    for account in list(root):
-        if account.findtext('login') in roles:root.remove(account)
-    tree.write(accounts,encoding='utf-8',xml_declaration=True)
+    if created:
+        def cleanup(root):
+            for account in list(root):
+                if account.findtext('login') in created:root.remove(account)
+        edit_accounts(cleanup)
     for path in [state/'photos'/album,state/'generated/Thumbs'/album]:
         if path.exists():shutil.rmtree(path)
