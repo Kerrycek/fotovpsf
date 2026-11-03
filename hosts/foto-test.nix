@@ -17,9 +17,15 @@
   };
   systemd.settings.Manager.DefaultTimeoutStartSec = "900s";
   services.vpsfreePhotoShowPreview = {
-    enable = true;
+    enable = false;
     virtualHost = "foto.crucio.cz";
     mountPath = "/kra";
+  };
+  services.nginx.virtualHosts."foto.crucio.cz".locations = {
+    "= /kra".return = "308 https://foto.vpsfree.cz/$is_args$args";
+    "^~ /kra/".extraConfig = ''
+      rewrite ^/kra/(.*)$ https://foto.vpsfree.cz/$1 permanent;
+    '';
   };
   services.vpsfreeGallery = {
     enable = true;
